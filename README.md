@@ -66,7 +66,7 @@ bash
 
 ## Estrutura do Projeto (sugestão)
 
-
+```
 /projeto
  ├── main.c
  ├── jogo.c
@@ -75,7 +75,7 @@ bash
  ├── stats.h
  ├── historico.txt
  └── README.md
-
+````
 
 ---
 
