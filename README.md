@@ -64,7 +64,7 @@ A priorização das histórias obedece a uma lógica de dependência arquitetura
 
 Abaixo estão os registros do nosso Quadro Kanban e do Backlog Priorizado, demonstrando o planejamento das *Histórias do Usuário* para as Sprints de desenvolvimento.
 
-> **Visão do Quadro Kanban** > *O fluxo de trabalho organizado nas colunas To Do, Doing e Done.*
+> **Visão do Quadro Kanban** > *O fluxo de trabalho estruturado nas colunas: Backlog, A Fazer, Fazendo, Design, Revisão de Código e Concluído.*
 > 
 > <img src="./imagens/print-quadro.png" alt="Print do Quadro Kanban" width="800">
 
