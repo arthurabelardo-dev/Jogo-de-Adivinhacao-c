@@ -1,4 +1,4 @@
-# 🕵️‍♂️ Investigação Criminal: C-Criminal
+# Investigação Criminal: C-Criminal
 
 ![C](https://img.shields.io/badge/C-00599C?style=for-the-badge&logo=c&logoColor=white)
 ![Agile](https://img.shields.io/badge/Metodologia-Scrum%20%2F%20Kanban-27ae60?style=for-the-badge)
@@ -68,15 +68,34 @@ Módulo pós-jogo focado no tratamento de dados e geração de *insights* basead
 
 ---
 
+## Artefatos de Engenharia e Design
+
+Para garantir a qualidade técnica e visual antes da codificação, documentamos a arquitetura de interação e o fluxo de dados.
+
+### Prototipação e UI/UX
+Desenvolvemos a fidelidade visual e a jornada de interação do usuário utilizando o Figma.
+* **[Acessar Protótipo Interativo no Figma](https://www.figma.com/make/Qeu9UfYyMf8QrbvotMCLWp/Sem-t%C3%ADtulo?t=TbnsfvB3ntY5FB8Q-1)**
+* **Demonstração do Protótipo:**
+*(Para visualizar o vídeo de demonstração, [clique aqui e baixe o arquivo de vídeo](./video/demonstracao-prototipo.mp4) ou assista diretamente no repositório).*
+
+### Fluxo Lógico e Processos
+O comportamento das Histórias de Usuário foi mapeado previamente para garantir que a lógica em C cobriria todos os caminhos felizes e tratamentos de erro.
+* **[Visualizar Diagramas de Atividades das User Stories (Google Drive)](https://drive.google.com/drive/folders/1Ie-Q5i_qO5cq70D5H5UGpyAtHMfGOyR5)**
+
+---
+
 ## Evidências de Planejamento (Board Ágil)
 
-Abaixo estão os registros do nosso Quadro Kanban e do Backlog Priorizado, demonstrando o planejamento ágil para as Sprints de desenvolvimento.
+Toda a gestão de tarefas, Sprints e divisão de responsabilidades foi orquestrada via Jira Software.
+* **[Acessar Board Público no Jira](https://cesar-team-xjfwas8s.atlassian.net/jira/software/projects/SCRUM/boards/1)**
 
-> **Visão do Quadro Kanban** > *O fluxo de trabalho estruturado nas colunas: Backlog, A Fazer, Fazendo, Design, Revisão de Código e Concluído.*
+> **Visão do Quadro Kanban** <br>
+> *O fluxo de trabalho estruturado nas colunas: Backlog, A Fazer, Fazendo, Design, Revisão de Código e Concluído.*
 > 
 > <img src="./imagens/print-quadro.png" alt="Print do Quadro Kanban" width="800">
 
-> **Visão do Backlog Priorizado** > *As 12 histórias ordenadas e divididas por responsável para a Sprint 01.*
+> **Visão do Backlog Priorizado** <br>
+> *As 12 histórias ordenadas e divididas por responsável para a Sprint 01.*
 > 
 > <img src="./imagens/print-backlog.png" alt="Print do Backlog Priorizado" width="800">
 
