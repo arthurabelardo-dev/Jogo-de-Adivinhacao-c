@@ -76,7 +76,7 @@ Para garantir a qualidade técnica e visual antes da codificação, documentamos
 Desenvolvemos a fidelidade visual e a jornada de interação do usuário utilizando o Figma.
 * **[Acessar Protótipo Interativo no Figma](https://www.figma.com/make/Qeu9UfYyMf8QrbvotMCLWp/Sem-t%C3%ADtulo?p=f&fullscreen=1)**
 * **Demonstração do Protótipo:**
-*(Para visualizar o vídeo de demonstração, [clique aqui e baixe o arquivo de vídeo](./video/demonstracao-prototipo.mp4) ou assista diretamente no repositório).*
+*(Para visualizar o vídeo de demonstração, [clique aqui e baixe o arquivo de vídeo](./video/demonstracao-prototipo.mp4) ou assista diretamente no [link do vídeo no youtube](https://youtu.be/zq3WFZ6LRZw?si=vvPPmwpWL8_6_A4W).*
 
 ### Fluxo Lógico e Processos
 O comportamento das Histórias de Usuário foi mapeado previamente para garantir que a lógica em C cobriria todos os caminhos felizes e tratamentos de erro.
