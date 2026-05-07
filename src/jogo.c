@@ -4,6 +4,7 @@
 #include "jogo.h"
 #include "historico.h"
 #include "utils.h"
+#include "pistas.h"
 
 typedef enum {
     DICA_PAR,
@@ -288,7 +289,6 @@ void jogarPartida(int idCaso) {
     
     int maxVal = (idCaso == 1) ? 50 : (idCaso == 2) ? 100 : 200;
     int maxTentativas = (idCaso == 1) ? 7 : (idCaso == 2) ? 6 : 5;
-    int maxDicas = (idCaso == 1) ? -1 : (idCaso == 2) ? 4 : 2;
     int dicasUsadas = 0;
     
     int secreto = 1 + (rand() % maxVal);
@@ -296,7 +296,11 @@ void jogarPartida(int idCaso) {
     
     int palpitesDados[10]; 
     int contPalpites = 0;
-    char feedback[200] = "Aguardando seu primeiro palpite...";
+    char feedback[200] = "Colete pistas para construir sua investigacao antes de fazer um palpite final.";
+    
+    // Inicializar o sistema de pistas
+    BancoPistas banco;
+    inicializarBancoPistas(idCaso, secreto, &banco);
     
     Sessao s;
     if (idCaso == 1) {
@@ -322,7 +326,16 @@ void jogarPartida(int idCaso) {
         printf("  ============================================================\n\n");
         
         printf(CIANO "  >> Digite o codigo (1 a %d)\n" RESET, maxVal);
-        printf(AMARELO "  (Digite 0 para solicitar uma dica do perito)\n\n" RESET);
+        printf(AMARELO "  (Digite 0 para coletar uma pista)\n");
+        printf(AMARELO "  (Digite 9 para ver historico de pistas)\n\n" RESET);
+        
+        // Mostrar aviso se nao coletou minimo de pistas
+        if (!verificarMinimoAceitacao(&banco)) {
+            printf(VERMELHO "  *** AVISO CRITICO ***\n");
+            printf("  Voce PRECISA coletar pelo menos %d pistas antes de fazer um palpite!\n", banco.minimoRequired);
+            printf("  Pistas coletadas: %d/%d\n" RESET, banco.pistasColetadas, banco.minimoRequired);
+            printf(AMARELO "  Pressione 0 para coletar uma pista agora.\n\n" RESET);
+        }
         
         printf("  FEEDBACK DO SISTEMA:\n");
         printf("  \"%s\"\n\n", feedback);
@@ -330,15 +343,32 @@ void jogarPartida(int idCaso) {
         
         palpite = lerOpcao(0, maxVal);
 
+        // Opção para coletar pista
         if (palpite == 0) {
-            if (maxDicas != -1 && dicasUsadas >= maxDicas) {
-                strcpy(feedback, "DICA DO PERITO: Limite de dicas atingido.");
+            apresentarPista(&banco, secreto);
+            
+            // Ajustar reputação geral quando coleta pista
+            if (banco.pistasColetadas == banco.minimoRequired) {
+                strcpy(feedback, "Excelente! Voce coletou evidencia suficiente para prosseguir.");
             } else {
-                gerarDica(idCaso, secreto, feedback, sizeof(feedback));
-                if (maxDicas != -1) {
-                    dicasUsadas++;
-                }
+                strcpy(feedback, "Uma nova pista foi adicionada ao seu relatorio...");
             }
+            pausar();
+            continue;
+        }
+        
+        // Opção para ver histórico de pistas
+        if (palpite == 9) {
+            exibirHistoricoPistas(&banco);
+            strcpy(feedback, "Revisto o historico de pistas.");
+            pausar();
+            continue;
+        }
+
+        // VALIDACAO CRITICA: Rejeitar palpite se nao tiver minimo de pistas
+        if (!verificarMinimoAceitacao(&banco)) {
+            strcpy(feedback, "SISTEMA BLOQUEADO: Nao posso permitir um palpite sem evidencia suficiente!");
+            pausar();
             continue;
         }
 
@@ -382,6 +412,10 @@ void jogarPartida(int idCaso) {
     printf(CIANO "  --- RELATORIO DE DESEMPENHO ---\n" RESET);
     printf("  Caso: 0%d\n", idCaso);
     printf("  Tentativas usadas: %d de %d\n", s.tentativasUsadas, maxTentativas);
+    printf("  Pistas coletadas: %d pistas\n", banco.pistasColetadas);
+    
+    // Exibir sumário de pistas no final
+    exibirHistoricoPistas(&banco);
     
     printf(VERDE "\n  [V] Registro salvo no banco de dados do departamento.\n" RESET);
     
