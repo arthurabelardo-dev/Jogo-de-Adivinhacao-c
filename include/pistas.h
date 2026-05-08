@@ -34,6 +34,7 @@ typedef struct {
     int totalPistas;
     int pistasColetadas;   // Quantas pistas únicas o jogador viu
     int minimoRequired;    // Mínimo de pistas para permitir chutar
+    int maxPistasPermitidas; // Máximo de pistas que podem ser coletadas nesta dificuldade
     Suspeito suspeitos[5]; // Suspeitos que podem fornecer info
     int totalSuspeitos;
     float reputacaoGeral;  // Influencia quantas falsas aparecem

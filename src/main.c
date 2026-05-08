@@ -60,7 +60,14 @@ static void exibirMenu(void) {
 }
 
 int main(void) {
-    srand(time(NULL)); 
+    // Melhor seeding para maior aleatoriedade
+    srand((unsigned int)(time(NULL) ^ clock()));
+    
+    // Fazer alguns rand() descartáveis para "aquecer" o gerador
+    for (int i = 0; i < 5; i++) {
+        rand();
+    }
+    
     telaLogin();
 
     int opcao;
