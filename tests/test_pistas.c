@@ -9,7 +9,7 @@
 // ============================================================
 
 // Teste 1: Verificar que pistas diretas sempre existem
-void teste_pistas_diretas_existem() {
+void testePistasDiretasExistem() {
     printf("\n[TESTE 1] Verificar que pistas DIRETAS sempre existem por caso\n");
     printf("==============================================================\n");
     
@@ -34,7 +34,7 @@ void teste_pistas_diretas_existem() {
 }
 
 // Teste 2: Verificar que pistas falsas nao sao geradas sem validacao
-void teste_pistas_falsas_validacao() {
+void testePistasFalsasValidacao() {
     printf("\n[TESTE 2] Verificar logica de pistas FALSAS (validacao)\n");
     printf("==============================================================\n");
     
@@ -68,7 +68,7 @@ void teste_pistas_falsas_validacao() {
 }
 
 // Teste 3: Verificar minimo de pistas por caso
-void teste_minimo_pistas() {
+void testeMinimoPistas() {
     printf("\n[TESTE 3] Verificar minimo de pistas exigidas por caso\n");
     printf("==============================================================\n");
     
@@ -89,7 +89,7 @@ void teste_minimo_pistas() {
 }
 
 // Teste 4: Verificar sistema de reputação de suspeitos
-void teste_reputacao_suspeitos() {
+void testeReputacaoSuspeitos() {
     printf("\n[TESTE 4] Verificar sistema de reputacao de suspeitos\n");
     printf("==============================================================\n");
     
@@ -118,7 +118,7 @@ void teste_reputacao_suspeitos() {
 }
 
 // Teste 5: Verificar confiabilidade em escala 0.0-1.0
-void teste_confiabilidade_escala() {
+void testeConfiabilidadeEscala() {
     printf("\n[TESTE 5] Verificar confiabilidade em escala 0.0-1.0\n");
     printf("==============================================================\n");
     
@@ -141,7 +141,7 @@ void teste_confiabilidade_escala() {
 }
 
 // Teste 6: Verificar que sistema de suspeitos existe
-void teste_sistema_suspeitos() {
+void testeSistemaSuspeitos() {
     printf("\n[TESTE 6] Verificar existencia de sistema de suspeitos\n");
     printf("==============================================================\n");
     
@@ -163,7 +163,7 @@ void teste_sistema_suspeitos() {
 }
 
 // Teste 7: Verificar tipos de pista sao válidos
-void teste_tipos_pista() {
+void testeTiposPista() {
     printf("\n[TESTE 7] Verificar que todos os tipos de pista existem\n");
     printf("==============================================================\n");
     
@@ -192,7 +192,7 @@ void teste_tipos_pista() {
 }
 
 // Teste 8: Verificar preenchimento de casoId no modelo de dados
-void teste_caso_id_modelo() {
+void testeCasoIdModelo() {
     printf("\n[TESTE 8] Verificar campo casoId em todas as pistas\n");
     printf("==============================================================\n");
 
@@ -211,7 +211,7 @@ void teste_caso_id_modelo() {
 }
 
 // Teste 9: Verificar verificarMinimoAceitacao
-void teste_minimo_aceitacao() {
+void testeMinimoAceitacao() {
     printf("\n[TESTE 8] Verificar validacao de minimo de pistas\n");
     printf("==============================================================\n");
     
@@ -237,7 +237,7 @@ void teste_minimo_aceitacao() {
 }
 
 // Teste 10: Validar que pistas falsas podem ser ativadas por trigger de reputacao
-void teste_trigger_pistas_falsas() {
+void testeTriggerPistasFalsas() {
     printf("\n[TESTE 10] Verificar trigger de pistas falsas por reputacao\n");
     printf("==============================================================\n");
 
@@ -278,16 +278,16 @@ int main(void) {
     printf(CIANO "║       Criminal Investigation Game                      ║\n" RESET);
     printf(CIANO "╚════════════════════════════════════════════════════════╝\n" RESET);
     
-    teste_pistas_diretas_existem();
-    teste_pistas_falsas_validacao();
-    teste_minimo_pistas();
-    teste_reputacao_suspeitos();
-    teste_confiabilidade_escala();
-    teste_sistema_suspeitos();
-    teste_tipos_pista();
-    teste_caso_id_modelo();
-    teste_minimo_aceitacao();
-    teste_trigger_pistas_falsas();
+    testePistasDiretasExistem();
+    testePistasFalsasValidacao();
+    testeMinimoPistas();
+    testeReputacaoSuspeitos();
+    testeConfiabilidadeEscala();
+    testeSistemaSuspeitos();
+    testeTiposPista();
+    testeCasoIdModelo();
+    testeMinimoAceitacao();
+    testeTriggerPistasFalsas();
     
     printf("\n");
     printf(CIANO "════════════════════════════════════════════════════════\n" RESET);

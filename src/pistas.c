@@ -61,7 +61,7 @@ static int escolherIndicePorPeso(const BancoPistas *banco, const int *indices, i
 // PISTAS - CASO 1: O Último Suspiro do Magnata (1-50)
 // ============================================================
 
-static void inicializarPistas_Caso1(BancoPistas *banco, int numeroSecreto) {
+static void inicializarPistasCaso1(BancoPistas *banco, int numeroSecreto) {
     banco->totalPistas = 0;
     banco->totalSuspeitos = 0;
     banco->minimoRequired = 1;
@@ -169,7 +169,7 @@ static void inicializarPistas_Caso1(BancoPistas *banco, int numeroSecreto) {
 // PISTAS - CASO 2: Frequência de Fuga no Cassino (1-100)
 // ============================================================
 
-static void inicializarPistas_Caso2(BancoPistas *banco, int numeroSecreto) {
+static void inicializarPistasCaso2(BancoPistas *banco, int numeroSecreto) {
     banco->totalPistas = 0;
     banco->totalSuspeitos = 0;
     banco->minimoRequired = 1;
@@ -274,7 +274,7 @@ static void inicializarPistas_Caso2(BancoPistas *banco, int numeroSecreto) {
 // PISTAS - CASO 3: Protocolo Apocalipse (1-200)
 // ============================================================
 
-static void inicializarPistas_Caso3(BancoPistas *banco, int numeroSecreto) {
+static void inicializarPistasCaso3(BancoPistas *banco, int numeroSecreto) {
     banco->totalPistas = 0;
     banco->totalSuspeitos = 0;
     banco->minimoRequired = 1;
@@ -382,11 +382,11 @@ void inicializarBancoPistas(int idCaso, int numeroSecreto, BancoPistas *banco) {
     banco->pistasColetadas = 0;
     
     if (idCaso == 1) {
-        inicializarPistas_Caso1(banco, numeroSecreto);
+        inicializarPistasCaso1(banco, numeroSecreto);
     } else if (idCaso == 2) {
-        inicializarPistas_Caso2(banco, numeroSecreto);
+        inicializarPistasCaso2(banco, numeroSecreto);
     } else if (idCaso == 3) {
-        inicializarPistas_Caso3(banco, numeroSecreto);
+        inicializarPistasCaso3(banco, numeroSecreto);
     }
     
     for (int i = 0; i < banco->totalPistas; i++) {
