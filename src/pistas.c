@@ -26,6 +26,37 @@ static int somaDigitos(int n) {
     return sum;
 }
 
+static int ehQuadradoPerfeito(int n) {
+    if (n < 0) return 0;
+    for (int i = 0; i * i <= n; i++) {
+        if (i * i == n) return 1;
+    }
+    return 0;
+}
+
+static int escolherIndicePorPeso(const BancoPistas *banco, const int *indices, int total, int usarConfiabilidadeDireta) {
+    float pesos[20];
+    float soma = 0.0f;
+    float alvo = 0.0f;
+    float acumulado = 0.0f;
+
+    if (total <= 0) return -1;
+
+    for (int i = 0; i < total; i++) {
+        float conf = banco->pistas[indices[i]].confiabilidade;
+        pesos[i] = usarConfiabilidadeDireta ? conf : (1.0f - conf);
+        if (pesos[i] < 0.01f) pesos[i] = 0.01f;
+        soma += pesos[i];
+    }
+
+    alvo = ((float)rand() / (float)RAND_MAX) * soma;
+    for (int i = 0; i < total; i++) {
+        acumulado += pesos[i];
+        if (alvo <= acumulado) return indices[i];
+    }
+    return indices[total - 1];
+}
+
 // ============================================================
 // PISTAS - CASO 1: O Último Suspiro do Magnata (1-50)
 // ============================================================
@@ -33,7 +64,7 @@ static int somaDigitos(int n) {
 static void inicializarPistas_Caso1(BancoPistas *banco, int numeroSecreto) {
     banco->totalPistas = 0;
     banco->totalSuspeitos = 0;
-    banco->minimoRequired = 3;
+    banco->minimoRequired = 1;
     banco->reputacaoGeral = 0.7f;
     
     // ===== PISTA 1: DIRETA - Contexto do quarto =====
@@ -41,10 +72,8 @@ static void inicializarPistas_Caso1(BancoPistas *banco, int numeroSecreto) {
     banco->pistas[idx].id = idx + 1;
     banco->pistas[idx].tipo = PISTA_DIRETA;
     sprintf(banco->pistas[idx].descricao,
-        "PERITO FORENSE: Achei marcas de queimadura no teclado numerico do cofre. "
-        "A ultima digital marca os botoes %d e %d. Isso aponta para um codigo entre %d e %d.",
-        numeroSecreto / 10, numeroSecreto % 10,
-        (numeroSecreto / 10) * 10, ((numeroSecreto / 10) + 1) * 10);
+        "PERITO FORENSE: O laudo mostra que o codigo e %s.",
+        (numeroSecreto % 2 == 0) ? "PAR" : "IMPAR");
     banco->pistas[idx].confiabilidade = 0.92f;
     banco->pistas[idx].vinculoNumero = 1;
     
@@ -52,11 +81,10 @@ static void inicializarPistas_Caso1(BancoPistas *banco, int numeroSecreto) {
     idx = banco->totalPistas++;
     banco->pistas[idx].id = idx + 1;
     banco->pistas[idx].tipo = PISTA_NARRATIVA;
-    int horaDoHouror = (numeroSecreto / 5) + 9; // Interpretação: "exatamente tantas horas antes da meia-noite"
     sprintf(banco->pistas[idx].descricao,
-        "VIZINHA (testemunha confiavel): Ouvi barulho de vidro quebrando exatamente %d vezes em sequencia. "
-        "Parecia ritmado como alguem digitando... de %d em %d.",
-        numeroSecreto % 3 + 1, numeroSecreto % 7 + 1, numeroSecreto % 5 + 1);
+        "VIZINHA (testemunha confiavel): O ritmo dos sons era cadenciado. "
+        "No meu relogio, parecia seguir uma contagem em blocos de %d.",
+        (numeroSecreto % 4 == 0) ? 4 : 5);
     banco->pistas[idx].confiabilidade = 0.68f;
     banco->pistas[idx].vinculoNumero = 1;
     
@@ -65,9 +93,9 @@ static void inicializarPistas_Caso1(BancoPistas *banco, int numeroSecreto) {
     banco->pistas[idx].id = idx + 1;
     banco->pistas[idx].tipo = PISTA_DIRETA;
     sprintf(banco->pistas[idx].descricao,
-        "TECNICO SEGURANCA: O sistema registrou %d tentativas de acesso falhadas ANTES do sucesso. "
-        "Padrao muito especifico - o assassino conhecia o codigo, apenas testou a senha %d vez antes de acertar.",
-        numeroSecreto % 5 + 1, numeroSecreto % 3 + 1);
+        "TECNICO SEGURANCA: O cofre registrou duas falhas antes do acerto. "
+        "No padrao desse modelo, o codigo cai na classe de resto %d quando dividido por 3.",
+        numeroSecreto % 3);
     banco->pistas[idx].confiabilidade = 0.85f;
     banco->pistas[idx].vinculoNumero = 1;
     
@@ -76,11 +104,10 @@ static void inicializarPistas_Caso1(BancoPistas *banco, int numeroSecreto) {
     banco->pistas[idx].id = idx + 1;
     banco->pistas[idx].tipo = PISTA_NARRATIVA;
     sprintf(banco->pistas[idx].descricao,
-        "ESPOSA (suspeita, mas cooperando): Meu marido tinha uma obsessao com numeros que representavam "
-        "datas significativas. Sua filha nasceu num %d de um mes. O codigo pode estar ligado a isso.",
-        numeroSecreto % 28 + 1);
+        "ESPOSA (suspeita, mas cooperando): Ele repetia que o numero favorito dele era %s.",
+        ehPrimo(numeroSecreto) ? "primo" : "composto");
     banco->pistas[idx].confiabilidade = 0.55f;
-    banco->pistas[idx].vinculoNumero = (numeroSecreto % 7 == 0) ? 1 : 0;
+    banco->pistas[idx].vinculoNumero = 1;
     
     // ===== PISTA 5: FALSA - Informante suspeito =====
     idx = banco->totalPistas++;
@@ -111,9 +138,8 @@ static void inicializarPistas_Caso1(BancoPistas *banco, int numeroSecreto) {
     banco->pistas[idx].id = idx + 1;
     banco->pistas[idx].tipo = PISTA_DIRETA;
     sprintf(banco->pistas[idx].descricao,
-        "ANALISTA DE PADROES: O codigo definitivamente esta ENTRE %d e %d. "
-        "As assinaturas de calor no teclado sao conclusivas sobre esse intervalo.",
-        numeroSecreto - 5 > 1 ? numeroSecreto - 5 : 1, numeroSecreto + 5);
+        "ANALISTA DE PADROES: A soma dos digitos do codigo e %d.",
+        somaDigitos(numeroSecreto));
     banco->pistas[idx].confiabilidade = 0.88f;
     banco->pistas[idx].vinculoNumero = 1;
     
@@ -142,7 +168,7 @@ static void inicializarPistas_Caso1(BancoPistas *banco, int numeroSecreto) {
 static void inicializarPistas_Caso2(BancoPistas *banco, int numeroSecreto) {
     banco->totalPistas = 0;
     banco->totalSuspeitos = 0;
-    banco->minimoRequired = 4;
+    banco->minimoRequired = 1;
     banco->reputacaoGeral = 0.75f;
     
     // ===== PISTA 1: DIRETA - Intervalo técnico =====
@@ -150,9 +176,8 @@ static void inicializarPistas_Caso2(BancoPistas *banco, int numeroSecreto) {
     banco->pistas[idx].id = idx + 1;
     banco->pistas[idx].tipo = PISTA_DIRETA;
     sprintf(banco->pistas[idx].descricao,
-        "TECNICO RADIO: A frequencia esta DEFINITIVAMENTE entre %d e %d MHz. "
-        "Os analisadores de espectro nao mentem. Confianca 100%% nesse intervalo.",
-        numeroSecreto - 8 > 1 ? numeroSecreto - 8 : 1, numeroSecreto + 8);
+        "TECNICO RADIO: A frequencia de fuga e %s.",
+        (numeroSecreto % 2 == 0) ? "PAR" : "IMPAR");
     banco->pistas[idx].confiabilidade = 0.93f;
     banco->pistas[idx].vinculoNumero = 1;
     
@@ -173,9 +198,8 @@ static void inicializarPistas_Caso2(BancoPistas *banco, int numeroSecreto) {
     banco->pistas[idx].id = idx + 1;
     banco->pistas[idx].tipo = PISTA_DIRETA;
     sprintf(banco->pistas[idx].descricao,
-        "ENGENHEIRO TELECOM: Analisamos as transmissoes precedentes deles. "
-        "A frequencia usada é MAIOR que %d MHz com 87%% de certeza.",
-        numeroSecreto - 20 > 1 ? numeroSecreto - 20 : 1);
+        "ENGENHEIRO TELECOM: A frequencia %s multipla de 5.",
+        (numeroSecreto % 5 == 0) ? "E" : "NAO E");
     banco->pistas[idx].confiabilidade = 0.87f;
     banco->pistas[idx].vinculoNumero = 1;
     
@@ -183,14 +207,11 @@ static void inicializarPistas_Caso2(BancoPistas *banco, int numeroSecreto) {
     idx = banco->totalPistas++;
     banco->pistas[idx].id = idx + 1;
     banco->pistas[idx].tipo = PISTA_NARRATIVA;
-    int primeiroAlgarismo = numeroSecreto / 10;
     sprintf(banco->pistas[idx].descricao,
-        "HISTORICO DE CRIMES: Em operacoes de fuga anteriores, mopretu usou frequencias "
-        "que comecam com %d algo (tipo %d0, %d5, %d9, etc). "
-        "Esse padrao aparece em 6 de seus 8 ultimos crimes.",
-        primeiroAlgarismo, primeiroAlgarismo, primeiroAlgarismo, primeiroAlgarismo);
+        "HISTORICO DE CRIMES: No caderno de operacoes, as frequencias marcadas sempre deixavam resto %d na divisao por 3.",
+        numeroSecreto % 3);
     banco->pistas[idx].confiabilidade = 0.70f;
-    banco->pistas[idx].vinculoNumero = (numeroSecreto / 10 == primeiroAlgarismo) ? 1 : 0;
+    banco->pistas[idx].vinculoNumero = 1;
     
     // ===== PISTA 5: FALSA - Infiltrado inimigo =====
     idx = banco->totalPistas++;
@@ -222,9 +243,8 @@ static void inicializarPistas_Caso2(BancoPistas *banco, int numeroSecreto) {
     banco->pistas[idx].id = idx + 1;
     banco->pistas[idx].tipo = PISTA_DIRETA;
     sprintf(banco->pistas[idx].descricao,
-        "SENSOR BLOQUEADOR: O bloqueador deles opera em determinada faixa. "
-        "Podemos DESCARTAR completamente frequencias abaixo de %d MHz com confianca.",
-        numeroSecreto - 15 > 1 ? numeroSecreto - 15 : 1);
+        "SENSOR BLOQUEADOR: O bloco opera em frequencia com soma de digitos igual a %d.",
+        somaDigitos(numeroSecreto));
     banco->pistas[idx].confiabilidade = 0.90f;
     banco->pistas[idx].vinculoNumero = 1;
     
@@ -249,7 +269,7 @@ static void inicializarPistas_Caso2(BancoPistas *banco, int numeroSecreto) {
 static void inicializarPistas_Caso3(BancoPistas *banco, int numeroSecreto) {
     banco->totalPistas = 0;
     banco->totalSuspeitos = 0;
-    banco->minimoRequired = 5;
+    banco->minimoRequired = 1;
     banco->reputacaoGeral = 0.65f;
     
     // ===== PISTA 1: DIRETA - Intervalo crítico =====
@@ -257,9 +277,8 @@ static void inicializarPistas_Caso3(BancoPistas *banco, int numeroSecreto) {
     banco->pistas[idx].id = idx + 1;
     banco->pistas[idx].tipo = PISTA_DIRETA;
     sprintf(banco->pistas[idx].descricao,
-        "ANALISE DE LOGS: Os registros do firewall indicam DEFINITIVAMENTE que a porta "
-        "esta entre %d e %d. Isolamos com 94%% de precisao.",
-        numeroSecreto - 15 > 1 ? numeroSecreto - 15 : 1, numeroSecreto + 15);
+        "ANALISE DE LOGS: A porta infectada e %s.",
+        (numeroSecreto % 2 == 0) ? "PAR" : "IMPAR");
     banco->pistas[idx].confiabilidade = 0.94f;
     banco->pistas[idx].vinculoNumero = 1;
     
@@ -267,23 +286,19 @@ static void inicializarPistas_Caso3(BancoPistas *banco, int numeroSecreto) {
     idx = banco->totalPistas++;
     banco->pistas[idx].id = idx + 1;
     banco->pistas[idx].tipo = PISTA_NARRATIVA;
-    int primeiroDigito = numeroSecreto / 100;
     sprintf(banco->pistas[idx].descricao,
-        "PERICIA CIBERNETICA: O CH do Pina tem uma assinatura digital bem estudada. "
-        "Todos seus exploits recentes usam portas que comecam com %d (como %d00, %d50, etc). "
-        "Eh obsessao dele com numeros 'redondos'.",
-        primeiroDigito, primeiroDigito, primeiroDigito);
+        "PERICIA CIBERNETICA: O padrao do atacante indica porta %s por 4.",
+        (numeroSecreto % 4 == 0) ? "divisivel" : "nao divisivel");
     banco->pistas[idx].confiabilidade = 0.73f;
-    banco->pistas[idx].vinculoNumero = (numeroSecreto / 100 == primeiroDigito) ? 1 : 0;
+    banco->pistas[idx].vinculoNumero = 1;
     
     // ===== PISTA 3: DIRETA - Limite superior =====
     idx = banco->totalPistas++;
     banco->pistas[idx].id = idx + 1;
     banco->pistas[idx].tipo = PISTA_DIRETA;
     sprintf(banco->pistas[idx].descricao,
-        "AUDITORIA FORENSE: Rastreamos todos os pacotes maliciosos ate a origem. "
-        "DESCARTAMOS COMPLETAMENTE portas acima de %d - a engenharia de rede do Pina nao permite.",
-        numeroSecreto + 25);
+        "AUDITORIA FORENSE: O comportamento do malware indica porta %s por 5.",
+        (numeroSecreto % 5 == 0) ? "divisivel" : "nao divisivel");
     banco->pistas[idx].confiabilidade = 0.91f;
     banco->pistas[idx].vinculoNumero = 1;
     
@@ -292,10 +307,8 @@ static void inicializarPistas_Caso3(BancoPistas *banco, int numeroSecreto) {
     banco->pistas[idx].id = idx + 1;
     banco->pistas[idx].tipo = PISTA_NARRATIVA;
     sprintf(banco->pistas[idx].descricao,
-        "ARQUIVO CLASSIFIED: O Pina tem obcessao com numeros %s desde seus primeiros crimes. "
-        "Dos 12 ataques documentados, 11 usaram portas %s. Eh praticamente uma obsessao psicopata.",
-        numeroSecreto % 2 == 0 ? "PARES" : "IMPARES",
-        numeroSecreto % 2 == 0 ? "pares" : "impares");
+        "ARQUIVO CLASSIFIED: Entre os rastros, aparece classe de resto %d na divisao por 7.",
+        numeroSecreto % 7);
     banco->pistas[idx].confiabilidade = 0.75f;
     banco->pistas[idx].vinculoNumero = 1;
     
@@ -329,9 +342,8 @@ static void inicializarPistas_Caso3(BancoPistas *banco, int numeroSecreto) {
     banco->pistas[idx].id = idx + 1;
     banco->pistas[idx].tipo = PISTA_DIRETA;
     sprintf(banco->pistas[idx].descricao,
-        "VALIDACAO FINAL: Usando engenharia reversa no codigo-fonte do malware, "
-        "confirmamos que a porta é MAIOR que %d. Isso reduz significativamente o escopo.",
-        numeroSecreto - 30 > 1 ? numeroSecreto - 30 : 1);
+        "VALIDACAO FINAL: A porta %s um quadrado perfeito.",
+        ehQuadradoPerfeito(numeroSecreto) ? "E" : "NAO E");
     banco->pistas[idx].confiabilidade = 0.89f;
     banco->pistas[idx].vinculoNumero = 1;
     
@@ -366,18 +378,60 @@ void inicializarBancoPistas(int idCaso, int numeroSecreto, BancoPistas *banco) {
     }
     
     for (int i = 0; i < banco->totalPistas; i++) {
+        banco->pistas[i].casoId = idCaso;
         banco->pistas[i].jaApresentada = 0;
     }
 }
 
 void apresentarPista(BancoPistas *banco, int numeroSecreto) {
-    // Encontrar uma pista ainda não apresentada
+    (void)numeroSecreto;
+    int escolhasDiretasNarrativas[20];
+    int escolhasFalsas[20];
+    int totalDN = 0;
+    int totalF = 0;
     int indiceDisponivel = -1;
+    int triggerFalsa = 0;
+    int chanceFalsa = 25;
+
     for (int i = 0; i < banco->totalPistas; i++) {
-        if (!banco->pistas[i].jaApresentada) {
-            indiceDisponivel = i;
-            break;
+        if (banco->pistas[i].jaApresentada) {
+            continue;
         }
+        if (banco->pistas[i].tipo == PISTA_FALSA) {
+            escolhasFalsas[totalF++] = i;
+        } else {
+            escolhasDiretasNarrativas[totalDN++] = i;
+        }
+    }
+
+    if (banco->pistasColetadas >= 2) {
+        if (banco->reputacaoGeral < 0.55f) {
+            triggerFalsa = 1;
+        }
+        for (int i = 0; i < banco->totalSuspeitos; i++) {
+            if (banco->suspeitos[i].reputacao < 0.20f) {
+                triggerFalsa = 1;
+                break;
+            }
+        }
+    }
+
+    if (banco->reputacaoGeral < 0.45f) {
+        chanceFalsa = 50;
+    }
+
+    if (triggerFalsa && totalF > 0 && (rand() % 100) < chanceFalsa) {
+        indiceDisponivel = escolherIndicePorPeso(banco, escolhasFalsas, totalF, 0);
+        for (int i = 0; i < banco->totalSuspeitos; i++) {
+            if (banco->suspeitos[i].id == banco->pistas[indiceDisponivel].suspeitorId) {
+                banco->suspeitos[i].forneceuFalsa = 1;
+                break;
+            }
+        }
+    } else if (totalDN > 0) {
+        indiceDisponivel = escolherIndicePorPeso(banco, escolhasDiretasNarrativas, totalDN, 1);
+    } else if (totalF > 0) {
+        indiceDisponivel = escolherIndicePorPeso(banco, escolhasFalsas, totalF, 0);
     }
     
     if (indiceDisponivel == -1) {
@@ -389,24 +443,16 @@ void apresentarPista(BancoPistas *banco, int numeroSecreto) {
     pista->jaApresentada = 1;
     banco->pistasColetadas++;
     
-    // Exibir a pista com visual diferente de acordo com o tipo
     printf("\n");
     printf("  ============================================================\n");
-    
-    int percentual = (int)(pista->confiabilidade * 100);
-    
-    if (pista->tipo == PISTA_DIRETA) {
-        printf(VERDE "  [PISTA DIRETA] Confiabilidade: %d%%\n" RESET, percentual);
-    } else if (pista->tipo == PISTA_NARRATIVA) {
-        printf(AMARELO "  [PISTA NARRATIVA] Confiabilidade: %d%%\n" RESET, percentual);
-    } else {
-        printf(VERMELHO "  [PISTA SUSPEITA/FALSA] Confiabilidade: %d%%\n" RESET, percentual);
-    }
-    
+    printf(CIANO "  PISTA COLETADA\n" RESET);
     printf("  ============================================================\n");
     printf("  %s\n", pista->descricao);
     printf("  ============================================================\n\n");
-    
+
+    if (triggerFalsa) {
+        printf(AMARELO "  ALERTA DO PERITO: Ha fontes com historico duvidoso em circulacao.\n" RESET);
+    }
     printf(CIANO "  [Pista %d/%d coletada]\n" RESET, banco->pistasColetadas, banco->totalPistas);
 }
 
@@ -419,27 +465,19 @@ void exibirHistoricoPistas(const BancoPistas *banco) {
     printf(CIANO "  ============ HISTORICO DE PISTAS COLETADAS ==============\n" RESET);
     printf("  Total coletado: %d/%d pistas\n\n", banco->pistasColetadas, banco->totalPistas);
     
-    int contadorDireta = 0, contadorNarrativa = 0, contadorFalsa = 0;
+    int contadorPistas = 0;
     
     for (int i = 0; i < banco->totalPistas; i++) {
         if (banco->pistas[i].jaApresentada) {
-            int percentual = (int)(banco->pistas[i].confiabilidade * 100);
-            
-            if (banco->pistas[i].tipo == PISTA_DIRETA) {
-                printf(VERDE "  [D] " RESET);
-                contadorDireta++;
-            } else if (banco->pistas[i].tipo == PISTA_NARRATIVA) {
-                printf(AMARELO "  [N] " RESET);
-                contadorNarrativa++;
-            } else {
-                printf(VERMELHO "  [F] " RESET);
-                contadorFalsa++;
-            }
-            printf("Conf: %3d%% | %s\n", percentual, banco->pistas[i].descricao);
+            contadorPistas++;
+            printf("  PISTA COLETADA: %s\n", banco->pistas[i].descricao);
         }
     }
-    
-    printf("\n  Resumo: %d Diretas | %d Narrativas | %d Falsas\n", contadorDireta, contadorNarrativa, contadorFalsa);
+
+    printf("\n  Resumo: %d evidencias listadas.\n", contadorPistas);
+    if (banco->reputacaoGeral < 0.55f) {
+        printf(AMARELO "  Aviso: existem relatos contraditorios entre as fontes.\n" RESET);
+    }
     printf("  " CIANO "================================================\n\n" RESET);
 }
 

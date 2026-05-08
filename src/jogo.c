@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include "jogo.h"
 #include "historico.h"
 #include "utils.h"
@@ -76,6 +77,7 @@ static int dicaCombina(TipoDica dica, int secreto) {
     }
 }
 
+static void gerarDica(int idCaso, int secreto, char *saida, size_t tamanho) __attribute__((unused));
 static void gerarDica(int idCaso, int secreto, char *saida, size_t tamanho) {
     TipoDica dicas[10];
     int qtdDicas = 0;
@@ -205,6 +207,38 @@ static void gerarDica(int idCaso, int secreto, char *saida, size_t tamanho) {
     }
 }
 
+static int lerPalpiteOuComando(int maxCodigo, int comandoHistorico) {
+    char linha[64];
+    char copia[64];
+    char *fim = NULL;
+    long valor = 0;
+
+    while (1) {
+        if (fgets(linha, sizeof(linha), stdin) == NULL) {
+            return 0;
+        }
+        linha[strcspn(linha, "\n")] = '\0';
+
+        strncpy(copia, linha, sizeof(copia) - 1);
+        copia[sizeof(copia) - 1] = '\0';
+        for (int i = 0; copia[i] != '\0'; i++) {
+            copia[i] = (char)tolower((unsigned char)copia[i]);
+        }
+
+        if (strcmp(copia, "revisar pistas") == 0) {
+            return comandoHistorico;
+        }
+
+        valor = strtol(linha, &fim, 10);
+        while (*fim == ' ' || *fim == '\t') fim++;
+        if (fim != linha && *fim == '\0' && valor >= 0 && valor <= maxCodigo) {
+            return (int)valor;
+        }
+
+        printf(VERMELHO "Entrada invalida. Digite um numero valido ou 'revisar pistas': " RESET);
+    }
+}
+
 static void exibirRelatorio(int idCaso) {
     limparTela();
     printf("\n");
@@ -289,10 +323,10 @@ void jogarPartida(int idCaso) {
     
     int maxVal = (idCaso == 1) ? 50 : (idCaso == 2) ? 100 : 200;
     int maxTentativas = (idCaso == 1) ? 7 : (idCaso == 2) ? 6 : 5;
-    int dicasUsadas = 0;
-    
+    int limitePistas = (idCaso == 1) ? 4 : (idCaso == 2) ? 3 : 2;
     int secreto = 1 + (rand() % maxVal);
     int tentativas = maxTentativas;
+    int comandoHistorico = maxVal + 1;
     
     int palpitesDados[10]; 
     int contPalpites = 0;
@@ -301,6 +335,13 @@ void jogarPartida(int idCaso) {
     // Inicializar o sistema de pistas
     BancoPistas banco;
     inicializarBancoPistas(idCaso, secreto, &banco);
+
+    // Regra de onboarding: 1 pista obrigatoria antes da primeira jogada.
+    limparTela();
+    printf("\n  O perito liberou a primeira evidencia obrigatoria da investigacao:\n");
+    apresentarPista(&banco, secreto);
+    strcpy(feedback, "Primeira pista obrigatoria coletada. Voce ja pode tentar resolver o caso.");
+    pausar();
     
     Sessao s;
     if (idCaso == 1) {
@@ -327,7 +368,9 @@ void jogarPartida(int idCaso) {
         
         printf(CIANO "  >> Digite o codigo (1 a %d)\n" RESET, maxVal);
         printf(AMARELO "  (Digite 0 para coletar uma pista)\n");
-        printf(AMARELO "  (Digite 9 para ver historico de pistas)\n\n" RESET);
+        printf(AMARELO "  (Digite %d ou 'revisar pistas' para revisar pistas)\n\n" RESET, comandoHistorico);
+        printf("  Pistas disponiveis nesta dificuldade: %d | Coletadas: %d\n\n",
+               limitePistas, banco.pistasColetadas);
         
         // Mostrar aviso se nao coletou minimo de pistas
         if (!verificarMinimoAceitacao(&banco)) {
@@ -339,12 +382,26 @@ void jogarPartida(int idCaso) {
         
         printf("  FEEDBACK DO SISTEMA:\n");
         printf("  \"%s\"\n\n", feedback);
+        printf("  LOG DE TENTATIVAS:\n");
+        if (contPalpites == 0) {
+            printf("  [nenhum palpite registrado]\n");
+        } else {
+            for (int i = 0; i < contPalpites; i++) {
+                printf("  [%d] %d\n", i + 1, palpitesDados[i]);
+            }
+        }
+        printf("\n");
         printf("  > ");
         
-        palpite = lerOpcao(0, maxVal);
+        palpite = lerPalpiteOuComando(comandoHistorico, comandoHistorico);
 
         // Opção para coletar pista
         if (palpite == 0) {
+            if (banco.pistasColetadas >= limitePistas) {
+                strcpy(feedback, "Limite de pistas desta dificuldade atingido.");
+                pausar();
+                continue;
+            }
             apresentarPista(&banco, secreto);
             
             // Ajustar reputação geral quando coleta pista
@@ -358,7 +415,7 @@ void jogarPartida(int idCaso) {
         }
         
         // Opção para ver histórico de pistas
-        if (palpite == 9) {
+        if (palpite == comandoHistorico) {
             exibirHistoricoPistas(&banco);
             strcpy(feedback, "Revisto o historico de pistas.");
             pausar();
@@ -385,12 +442,6 @@ void jogarPartida(int idCaso) {
                 strcpy(feedback, "A assinatura termica esfriou. O codigo e MENOR.");
             }
             tentativas--;
-        }
-        
-        printf("  ============================================================\n\n");
-        printf("  LOG DE TENTATIVAS:\n");
-        for(int i = 0; i < contPalpites; i++) {
-            printf("  [%d] %d\n", i+1, palpitesDados[i]);
         }
         pausar();
     }

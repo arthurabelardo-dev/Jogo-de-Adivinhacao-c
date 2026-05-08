@@ -7,18 +7,38 @@
 #include "historico.h"
 
 static void telaLogin(void) {
+    const char usuarioValido[] = "detetive";
+    const char senhaValida[] = "1234";
+    char usuario[50];
+    char senha[50];
+
     limparTela();
     printf("\n");
     printf(CIANO "  ============================================================\n" RESET);
     printf("               SISTEMA DE INVESTIGACAO CRIMINAL\n");
     printf("         DEPARTAMENTO DE INVESTIGACAO - ACESSO RESTRITO\n");
     printf(CIANO "  ============================================================\n\n" RESET);
-    printf("  USUARIO: 1\n\n");
-    printf(VERDE "  senha: " RESET);
-    
-    char senhaFalsa[50];
-    if (fgets(senhaFalsa, sizeof(senhaFalsa), stdin) != NULL) {
-        senhaFalsa[strcspn(senhaFalsa, "\n")] = '\0';
+
+    while (1) {
+        printf("  Usuario: ");
+        if (fgets(usuario, sizeof(usuario), stdin) == NULL) {
+            continue;
+        }
+        usuario[strcspn(usuario, "\n")] = '\0';
+
+        printf(VERDE "  Senha: " RESET);
+        if (fgets(senha, sizeof(senha), stdin) == NULL) {
+            continue;
+        }
+        senha[strcspn(senha, "\n")] = '\0';
+
+        if (strcmp(usuario, usuarioValido) == 0 && strcmp(senha, senhaValida) == 0) {
+            printf(VERDE "\n  Acesso liberado. Bem-vindo(a), Detetive.\n" RESET);
+            pausar();
+            return;
+        }
+
+        printf(VERMELHO "\n  Credenciais invalidas. Tente novamente.\n\n" RESET);
     }
 }
 

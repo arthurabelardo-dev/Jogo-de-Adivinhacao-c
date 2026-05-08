@@ -19,6 +19,7 @@ typedef struct {
 // Estrutura de dados para cada pista
 typedef struct {
     int id;
+    int casoId;
     TipoPista tipo;
     char descricao[300];
     float confiabilidade;  // 0.0-1.0 (0.0=nunca confiar, 1.0=totalmente confiavel)

@@ -72,7 +72,7 @@ void teste_minimo_pistas() {
     printf("\n[TESTE 3] Verificar minimo de pistas exigidas por caso\n");
     printf("==============================================================\n");
     
-    int minimosPorCaso[] = {3, 4, 5};
+    int minimosPorCaso[] = {1, 1, 1};
     
     for (int caso = 1; caso <= 3; caso++) {
         BancoPistas banco;
@@ -191,7 +191,26 @@ void teste_tipos_pista() {
     }
 }
 
-// Teste 8: Verificar verificarMinimoAceitacao
+// Teste 8: Verificar preenchimento de casoId no modelo de dados
+void teste_caso_id_modelo() {
+    printf("\n[TESTE 8] Verificar campo casoId em todas as pistas\n");
+    printf("==============================================================\n");
+
+    for (int caso = 1; caso <= 3; caso++) {
+        BancoPistas banco;
+        int ok = 1;
+        inicializarBancoPistas(caso, 30, &banco);
+        for (int i = 0; i < banco.totalPistas; i++) {
+            if (banco.pistas[i].casoId != caso) {
+                ok = 0;
+                break;
+            }
+        }
+        printf("  Caso %d: %s\n", caso, ok ? "✓ PASSOU" : "✗ FALHOU");
+    }
+}
+
+// Teste 9: Verificar verificarMinimoAceitacao
 void teste_minimo_aceitacao() {
     printf("\n[TESTE 8] Verificar validacao de minimo de pistas\n");
     printf("==============================================================\n");
@@ -217,6 +236,37 @@ void teste_minimo_aceitacao() {
     }
 }
 
+// Teste 10: Validar que pistas falsas podem ser ativadas por trigger de reputacao
+void teste_trigger_pistas_falsas() {
+    printf("\n[TESTE 10] Verificar trigger de pistas falsas por reputacao\n");
+    printf("==============================================================\n");
+
+    int houveFalsa = 0;
+    srand(42);
+
+    for (int rodada = 0; rodada < 20; rodada++) {
+        BancoPistas banco;
+        inicializarBancoPistas(1, 37, &banco);
+        banco.reputacaoGeral = 0.1f;
+        banco.suspeitos[0].reputacao = 0.1f;
+        banco.suspeitos[1].reputacao = 0.1f;
+
+        apresentarPista(&banco, 37);
+        apresentarPista(&banco, 37);
+        apresentarPista(&banco, 37);
+
+        for (int i = 0; i < banco.totalPistas; i++) {
+            if (banco.pistas[i].jaApresentada && banco.pistas[i].tipo == PISTA_FALSA) {
+                houveFalsa = 1;
+                break;
+            }
+        }
+        if (houveFalsa) break;
+    }
+
+    printf("  Trigger de falsa com reputacao baixa: %s\n", houveFalsa ? "✓ PASSOU" : "✗ FALHOU");
+}
+
 // ============================================================
 // EXECUÇÃO DOS TESTES
 // ============================================================
@@ -235,7 +285,9 @@ int main(void) {
     teste_confiabilidade_escala();
     teste_sistema_suspeitos();
     teste_tipos_pista();
+    teste_caso_id_modelo();
     teste_minimo_aceitacao();
+    teste_trigger_pistas_falsas();
     
     printf("\n");
     printf(CIANO "════════════════════════════════════════════════════════\n" RESET);
