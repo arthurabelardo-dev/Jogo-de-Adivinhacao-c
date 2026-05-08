@@ -151,12 +151,16 @@ static void inicializarPistas_Caso1(BancoPistas *banco, int numeroSecreto) {
     strcpy(banco->suspeitos[0].nome, "Informante Anonimo");
     banco->suspeitos[0].reputacao = 0.20f;
     banco->suspeitos[0].forneceuFalsa = 0;
+    banco->suspeitos[0].interrogado = 0;
+    banco->suspeitos[0].eMentiroso = 0;
     
     // Suspeito 2: Delator (não confiavel)
     banco->suspeitos[1].id = 2;
     strcpy(banco->suspeitos[1].nome, "Delator Cassino");
     banco->suspeitos[1].reputacao = 0.10f;
     banco->suspeitos[1].forneceuFalsa = 0;
+    banco->suspeitos[1].interrogado = 0;
+    banco->suspeitos[1].eMentiroso = 0;
     
     banco->totalSuspeitos = 2;
 }
@@ -253,11 +257,15 @@ static void inicializarPistas_Caso2(BancoPistas *banco, int numeroSecreto) {
     strcpy(banco->suspeitos[0].nome, "Informante Darknet");
     banco->suspeitos[0].reputacao = 0.15f;
     banco->suspeitos[0].forneceuFalsa = 0;
+    banco->suspeitos[0].interrogado = 0;
+    banco->suspeitos[0].eMentiroso = 0;
     
     banco->suspeitos[1].id = 2;
     strcpy(banco->suspeitos[1].nome, "Policial Corrupto");
     banco->suspeitos[1].reputacao = 0.25f;
     banco->suspeitos[1].forneceuFalsa = 0;
+    banco->suspeitos[1].interrogado = 0;
+    banco->suspeitos[1].eMentiroso = 0;
     
     banco->totalSuspeitos = 2;
 }
@@ -352,11 +360,15 @@ static void inicializarPistas_Caso3(BancoPistas *banco, int numeroSecreto) {
     strcpy(banco->suspeitos[0].nome, "Fonte Comprometida");
     banco->suspeitos[0].reputacao = 0.10f;
     banco->suspeitos[0].forneceuFalsa = 0;
+    banco->suspeitos[0].interrogado = 0;
+    banco->suspeitos[0].eMentiroso = 0;
     
     banco->suspeitos[1].id = 2;
     strcpy(banco->suspeitos[1].nome, "Espia Rival");
     banco->suspeitos[1].reputacao = 0.08f;
     banco->suspeitos[1].forneceuFalsa = 0;
+    banco->suspeitos[1].interrogado = 0;
+    banco->suspeitos[1].eMentiroso = 0;
     
     banco->totalSuspeitos = 2;
 }
@@ -479,6 +491,102 @@ void exibirHistoricoPistas(const BancoPistas *banco) {
         printf(AMARELO "  Aviso: existem relatos contraditorios entre as fontes.\n" RESET);
     }
     printf("  " CIANO "================================================\n\n" RESET);
+}
+
+static void gerarDeclaracaoSuspeito(int idCaso, int numeroSecreto, int mentiroso,
+                                    char *saida, size_t tamanho, TipoPista *tipo, int *vinculoNumero) {
+    int sorteio = rand() % 3;
+    int numeroFalso = numeroSecreto;
+    int maxVal = (idCaso == 1) ? 50 : (idCaso == 2) ? 100 : 200;
+
+    numeroFalso = (numeroSecreto + (rand() % (maxVal - 1) + 1)) % maxVal + 1;
+
+    if (mentiroso) {
+        *tipo = PISTA_FALSA;
+        *vinculoNumero = 0;
+
+        if (sorteio == 0) {
+            snprintf(saida, tamanho, "INTERROGADO: O codigo e %s.", (numeroSecreto % 2 == 0) ? "IMPAR" : "PAR");
+        } else if (sorteio == 1) {
+            snprintf(saida, tamanho, "INTERROGADO: Tenho quase certeza que o numero e %d.", numeroFalso);
+        } else {
+            snprintf(saida, tamanho, "INTERROGADO: Ele falava muito de resto %d na divisao por 3.", (numeroSecreto + 1) % 3);
+        }
+        return;
+    }
+
+    *tipo = PISTA_DIRETA;
+    *vinculoNumero = 1;
+
+    if (sorteio == 0) {
+        snprintf(saida, tamanho, "INTERROGADO: O codigo e %s.", (numeroSecreto % 2 == 0) ? "PAR" : "IMPAR");
+    } else if (sorteio == 1) {
+        snprintf(saida, tamanho, "INTERROGADO: A soma dos digitos e %d.", somaDigitos(numeroSecreto));
+    } else {
+        snprintf(saida, tamanho, "INTERROGADO: Ele citou resto %d na divisao por 3.", numeroSecreto % 3);
+    }
+}
+
+void prepararSuspeitosParaPartida(BancoPistas *banco) {
+    float chanceMentiroso = 0.35f;
+
+    for (int i = 0; i < banco->totalSuspeitos; i++) {
+        banco->suspeitos[i].interrogado = 0;
+        banco->suspeitos[i].eMentiroso = ((float)rand() / (float)RAND_MAX) < chanceMentiroso;
+    }
+}
+
+int interrogarSuspeito(BancoPistas *banco, int idCaso, int numeroSecreto, int suspeitoIndex, Pista *pistaSaida) {
+    if (suspeitoIndex < 0 || suspeitoIndex >= banco->totalSuspeitos || pistaSaida == NULL) {
+        return 0;
+    }
+
+    Suspeito *suspeito = &banco->suspeitos[suspeitoIndex];
+    if (suspeito->interrogado) {
+        return 0;
+    }
+
+    suspeito->interrogado = 1;
+
+    TipoPista tipo = PISTA_NARRATIVA;
+    int vinculoNumero = 0;
+
+    gerarDeclaracaoSuspeito(idCaso, numeroSecreto, suspeito->eMentiroso,
+                            pistaSaida->descricao, sizeof(pistaSaida->descricao), &tipo, &vinculoNumero);
+
+    pistaSaida->id = 0;
+    pistaSaida->casoId = idCaso;
+    pistaSaida->tipo = tipo;
+    pistaSaida->confiabilidade = suspeito->eMentiroso ? 0.10f : 0.80f;
+    pistaSaida->jaApresentada = 1;
+    pistaSaida->vinculoNumero = vinculoNumero;
+    pistaSaida->suspeitorId = suspeito->id;
+
+    return 1;
+}
+
+int registrarPistaInterrogatorio(BancoPistas *banco, int idCaso, const Pista *pista) {
+    if (banco->totalPistas >= 20 || pista == NULL) {
+        return 0;
+    }
+
+    int idx = banco->totalPistas++;
+    banco->pistas[idx] = *pista;
+    banco->pistas[idx].id = idx + 1;
+    banco->pistas[idx].casoId = idCaso;
+    banco->pistas[idx].jaApresentada = 1;
+    banco->pistasColetadas++;
+
+    if (pista->tipo == PISTA_FALSA) {
+        for (int i = 0; i < banco->totalSuspeitos; i++) {
+            if (banco->suspeitos[i].id == pista->suspeitorId) {
+                banco->suspeitos[i].forneceuFalsa = 1;
+                break;
+            }
+        }
+    }
+
+    return 1;
 }
 
 void ajustarReputacaoSuspeito(BancoPistas *banco, int suspeitoId, float delta) {

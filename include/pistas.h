@@ -14,6 +14,8 @@ typedef struct {
     char nome[50];
     float reputacao;  // 0.0-1.0 (0=não confia, 1=confia totalmente)
     int forneceuFalsa; // Se já forneceu pista falsa
+    int interrogado;  // Se já foi interrogado
+    int eMentiroso;   // 1=mentiroso, 0=verdadeiro (definido por partida)
 } Suspeito;
 
 // Estrutura de dados para cada pista
@@ -42,6 +44,9 @@ typedef struct {
 // Funções
 void inicializarBancoPistas(int idCaso, int numeroSecreto, BancoPistas *banco);
 void apresentarPista(BancoPistas *banco, int numeroSecreto);
+void prepararSuspeitosParaPartida(BancoPistas *banco);
+int interrogarSuspeito(BancoPistas *banco, int idCaso, int numeroSecreto, int suspeitoIndex, Pista *pistaSaida);
+int registrarPistaInterrogatorio(BancoPistas *banco, int idCaso, const Pista *pista);
 int verificarMinimoAceitacao(const BancoPistas *banco);
 void exibirHistoricoPistas(const BancoPistas *banco);
 void ajustarReputacaoSuspeito(BancoPistas *banco, int suspeitoId, float delta);

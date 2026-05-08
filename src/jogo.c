@@ -312,6 +312,21 @@ static void exibirRelatorio(int idCaso) {
     getchar();
 }
 
+static int escolherSuspeito(const BancoPistas *banco) {
+    printf(CIANO "\n  LISTA DE SUSPEITOS INTERROGAVEIS\n" RESET);
+    printf("  [0] Voltar\n");
+    for (int i = 0; i < banco->totalSuspeitos; i++) {
+        const Suspeito *suspeito = &banco->suspeitos[i];
+        printf("  [%d] %s%s\n", i + 1, suspeito->nome,
+               suspeito->interrogado ? " (ja interrogado)" : "");
+    }
+    printf("\n  > ");
+
+    int escolha = lerOpcao(0, banco->totalSuspeitos);
+    if (escolha == 0) return -1;
+    return escolha - 1;
+}
+
 void jogarPartida(int idCaso) {
     if (idCaso < 1 || idCaso > 3) {
         printf(VERMELHO "  Erro: id de caso invalido (%d).\n" RESET, idCaso);
@@ -324,9 +339,11 @@ void jogarPartida(int idCaso) {
     int maxVal = (idCaso == 1) ? 50 : (idCaso == 2) ? 100 : 200;
     int maxTentativas = (idCaso == 1) ? 7 : (idCaso == 2) ? 6 : 5;
     int limitePistas = (idCaso == 1) ? 4 : (idCaso == 2) ? 3 : 2;
+    int limiteInterrogatorios = (idCaso == 1) ? 2 : (idCaso == 2) ? 2 : 1;
     int secreto = 1 + (rand() % maxVal);
     int tentativas = maxTentativas;
     int comandoHistorico = maxVal + 1;
+    int comandoInterrogatorio = maxVal + 2;
     
     int palpitesDados[10]; 
     int contPalpites = 0;
@@ -335,6 +352,9 @@ void jogarPartida(int idCaso) {
     // Inicializar o sistema de pistas
     BancoPistas banco;
     inicializarBancoPistas(idCaso, secreto, &banco);
+    prepararSuspeitosParaPartida(&banco);
+
+    int interrogatoriosUsados = 0;
 
     // Regra de onboarding: 1 pista obrigatoria antes da primeira jogada.
     limparTela();
@@ -368,9 +388,11 @@ void jogarPartida(int idCaso) {
         
         printf(CIANO "  >> Digite o codigo (1 a %d)\n" RESET, maxVal);
         printf(AMARELO "  (Digite 0 para coletar uma pista)\n");
-        printf(AMARELO "  (Digite %d ou 'revisar pistas' para revisar pistas)\n\n" RESET, comandoHistorico);
-        printf("  Pistas disponiveis nesta dificuldade: %d | Coletadas: %d\n\n",
-               limitePistas, banco.pistasColetadas);
+         printf(AMARELO "  (Digite %d para interrogar suspeitos)\n" RESET, comandoInterrogatorio);
+         printf(AMARELO "  (Digite %d ou 'revisar pistas' para revisar pistas)\n\n" RESET, comandoHistorico);
+         printf("  Pistas disponiveis: %d | Coletadas: %d\n", limitePistas, banco.pistasColetadas);
+         printf("  Interrogatorios disponiveis: %d | Usados: %d\n\n",
+             limiteInterrogatorios, interrogatoriosUsados);
         
         // Mostrar aviso se nao coletou minimo de pistas
         if (!verificarMinimoAceitacao(&banco)) {
@@ -393,7 +415,7 @@ void jogarPartida(int idCaso) {
         printf("\n");
         printf("  > ");
         
-        palpite = lerPalpiteOuComando(comandoHistorico, comandoHistorico);
+        palpite = lerPalpiteOuComando(comandoInterrogatorio, comandoHistorico);
 
         // Opção para coletar pista
         if (palpite == 0) {
@@ -409,6 +431,53 @@ void jogarPartida(int idCaso) {
                 strcpy(feedback, "Excelente! Voce coletou evidencia suficiente para prosseguir.");
             } else {
                 strcpy(feedback, "Uma nova pista foi adicionada ao seu relatorio...");
+            }
+            pausar();
+            continue;
+        }
+
+        if (palpite == comandoInterrogatorio) {
+            if (interrogatoriosUsados >= limiteInterrogatorios) {
+                strcpy(feedback, "Limite de interrogatorios desta dificuldade atingido.");
+                pausar();
+                continue;
+            }
+
+            int suspeitoIndex = escolherSuspeito(&banco);
+            if (suspeitoIndex < 0) {
+                strcpy(feedback, "Interrogatorio cancelado.");
+                pausar();
+                continue;
+            }
+
+            if (banco.suspeitos[suspeitoIndex].interrogado) {
+                strcpy(feedback, "Esse suspeito ja foi interrogado.");
+                pausar();
+                continue;
+            }
+
+            Pista pistaInterrogatorio;
+            if (!interrogarSuspeito(&banco, idCaso, secreto, suspeitoIndex, &pistaInterrogatorio)) {
+                strcpy(feedback, "Nao foi possivel conduzir o interrogatorio.");
+                pausar();
+                continue;
+            }
+
+            printf("\n  INTERROGADO: %s !\n\n", banco.suspeitos[suspeitoIndex].nome);
+            printf("  %s\n\n", pistaInterrogatorio.descricao);
+            printf("  Confiar nessa declaracao?\n");
+            printf("  [1] Confiar\n  [2] Nao confiar\n\n  > ");
+            int confiar = lerOpcao(1, 2);
+
+            interrogatoriosUsados++;
+            if (confiar == 1) {
+                if (registrarPistaInterrogatorio(&banco, idCaso, &pistaInterrogatorio)) {
+                    strcpy(feedback, "Declaracao registrada como evidencia.");
+                } else {
+                    strcpy(feedback, "Relatorio lotado. A declaracao nao foi registrada.");
+                }
+            } else {
+                strcpy(feedback, "Declaracao descartada. Voce decidiu nao confiar.");
             }
             pausar();
             continue;
