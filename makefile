@@ -1,10 +1,10 @@
 CC      = gcc
 CFLAGS  = -Wall -Wextra -Wpedantic -std=c11 -I./include
 LDFLAGS =
-TARGET  = cCriminal
+TARGET  = ccriminal
 TEST_TARGET = test_pistas
 SRC     = src/main.c src/jogo.c src/historico.c src/utils.c src/pistas.c
-TEST_SRC = src/test_pistas.c src/pistas.c src/utils.c
+TEST_SRC = tests/test_pistas.c src/pistas.c src/utils.c
 
 .PHONY: all clean run test
 
