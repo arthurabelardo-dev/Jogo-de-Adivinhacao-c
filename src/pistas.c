@@ -114,14 +114,15 @@ static void inicializarPistas_Caso1(BancoPistas *banco, int numeroSecreto) {
     banco->pistas[idx].confiabilidade = 0.55f;
     banco->pistas[idx].vinculoNumero = 1;
     
-    // ===== PISTA 5: DIRETA - Análise de Câmeras de Segurança =====
+    // ===== PISTA 5: DIRETA - Analise de Cameras de Seguranca =====
     idx = banco->totalPistas++;
     banco->pistas[idx].id = idx + 1;
     banco->pistas[idx].tipo = PISTA_DIRETA;
     sprintf(banco->pistas[idx].descricao,
         "CHEFE DE SEGURANCA (agora demitido): As cameras do corredor capturam o reflexo no cofre. "
-        "O padrao de digitacao revela um numero entre %d e %d. Os peritos sao unanimes nisso.",
-        numeroSecreto - 5 > 1 ? numeroSecreto - 5 : 1, numeroSecreto + 5);
+        "No momento da abertura, o padrao dos toques indica que o codigo deixa resto %d quando dividido por 10. "
+        "Nao e prova completa, mas e um detalhe consistente da gravacao.",
+        numeroSecreto % 10);
     banco->pistas[idx].confiabilidade = 0.90f;
     banco->pistas[idx].vinculoNumero = 1;
     
@@ -154,9 +155,9 @@ static void inicializarPistas_Caso1(BancoPistas *banco, int numeroSecreto) {
     banco->pistas[idx].tipo = PISTA_NARRATIVA;
     sprintf(banco->pistas[idx].descricao,
         "CRIPTOGRAFO APOSENTADO: Encontramos uma carta de amor entre Gaga e sua primeira esposa (falecida). "
-        "Usa un codigo interior: 'meu amor, o tesouro abre com %d dedos no silencio'. "
-        "Provavelmente uma referencia romantica ao numero.",
-        numeroSecreto);
+        "Usa um codigo interior: 'meu amor, teu segredo danca em passos %s no silencio'. "
+        "Parece uma referencia romantica ao comportamento matematico da senha.",
+        (numeroSecreto % 2 == 0) ? "aos pares" : "impares");
     banco->pistas[idx].confiabilidade = 0.65f;
     banco->pistas[idx].vinculoNumero = 1;
     
