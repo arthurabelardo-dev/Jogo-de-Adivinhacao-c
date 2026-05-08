@@ -5,6 +5,7 @@
 #include "utils.h"
 #include "jogo.h"
 #include "historico.h"
+#include "reputacao.h"
 
 static void telaLogin(void) {
     const char usuarioValido[] = "detetive";
@@ -49,6 +50,7 @@ static void exibirMenu(void) {
     printf(CIANO "             ||||| DETETIVE DO TERMINAL |||||\n" RESET);
     printf(AMARELO "          *** SISTEMA DE INVESTIGACAO CRIMINAL ***\n\n" RESET);
     printf("  Novos casos aguardam sua atencao.\n\n");
+    printf("  Reputacao atual: %d\n\n", carregarReputacao());
     printf("  Selecione uma investigacao:\n\n");
     
     printf("  [1] O Ultimo Suspiro do Magnata    " VERDE "[Facil]\n" RESET);
@@ -63,15 +65,16 @@ int main(void) {
     srand(time(NULL)); 
     telaLogin();
 
+    int reputacao = carregarReputacao();
     int opcao;
     do {
         exibirMenu();
         opcao = lerOpcao(1, 5);
 
         switch (opcao) {
-            case 1: jogarPartida(1); break;
-            case 2: jogarPartida(2); break;
-            case 3: jogarPartida(3); break;
+            case 1: jogarPartida(1, &reputacao); break;
+            case 2: jogarPartida(2, &reputacao); break;
+            case 3: jogarPartida(3, &reputacao); break;
             case 4: exibirHistorico(); break;
             case 5:
                 limparTela();

@@ -6,6 +6,7 @@
 #include "historico.h"
 #include "utils.h"
 #include "pistas.h"
+#include "reputacao.h"
 
 typedef enum {
     DICA_PAR,
@@ -231,8 +232,13 @@ static int lerPalpiteOuComando(int maxCodigo, int comandoHistorico) {
 
         valor = strtol(linha, &fim, 10);
         while (*fim == ' ' || *fim == '\t') fim++;
-        if (fim != linha && *fim == '\0' && valor >= 0 && valor <= maxCodigo) {
-            return (int)valor;
+        if (fim != linha && *fim == '\0') {
+            if (valor == -1) {
+                return -1;
+            }
+            if (valor >= 0 && valor <= maxCodigo) {
+                return (int)valor;
+            }
         }
 
         printf(VERMELHO "Entrada invalida. Digite um numero valido ou 'revisar pistas': " RESET);
@@ -327,7 +333,71 @@ static int escolherSuspeito(const BancoPistas *banco) {
     return escolha - 1;
 }
 
-void jogarPartida(int idCaso) {
+static void calcularIntervalo(int secreto, int maxVal, int largura, int *inicio, int *fim) {
+    int metade = largura / 2;
+    int min = secreto - metade;
+    int max = secreto + metade;
+
+    if (min < 1) {
+        max += 1 - min;
+        min = 1;
+    }
+    if (max > maxVal) {
+        min -= max - maxVal;
+        max = maxVal;
+        if (min < 1) {
+            min = 1;
+        }
+    }
+
+    if (max - min < 2) {
+        max = min + 2;
+        if (max > maxVal) {
+            max = maxVal;
+            min = (maxVal > 2) ? maxVal - 2 : 1;
+        }
+    }
+
+    *inicio = min;
+    *fim = max;
+}
+
+static void gerarInferenciaPerito(int idCaso, int secreto, int maxVal, int pistasColetadas,
+                                  int reputacao, char *saida, size_t tamanho) {
+    if (reputacao >= 70) {
+        int largura = maxVal / (2 + pistasColetadas);
+        if (largura < 6) largura = 6;
+
+        int inicio = 1;
+        int fim = maxVal;
+        calcularIntervalo(secreto, maxVal, largura, &inicio, &fim);
+
+        snprintf(saida, tamanho, "PERITO: Com base nas evidencias, o numero parece estar entre %d e %d.", inicio, fim);
+        return;
+    }
+
+    if (reputacao <= 30) {
+        if (idCaso == 1) {
+            snprintf(saida, tamanho, "PERITO: As pistas estao confusas. Talvez algo ligado ao horario da vitima.");
+        } else if (idCaso == 2) {
+            snprintf(saida, tamanho, "PERITO: Os sinais estao instaveis. Pode ser um padrao repetitivo no ar.");
+        } else {
+            snprintf(saida, tamanho, "PERITO: O rastro e fraco. Talvez algo ligado ao ruido da rede.");
+        }
+        return;
+    }
+
+    int largura = maxVal / (1 + pistasColetadas);
+    if (largura < 12) largura = 12;
+
+    int inicio = 1;
+    int fim = maxVal;
+    calcularIntervalo(secreto, maxVal, largura, &inicio, &fim);
+
+    snprintf(saida, tamanho, "PERITO: A analise e incompleta, mas algo entre %d e %d parece plausivel.", inicio, fim);
+}
+
+void jogarPartida(int idCaso, int *reputacao) {
     if (idCaso < 1 || idCaso > 3) {
         printf(VERMELHO "  Erro: id de caso invalido (%d).\n" RESET, idCaso);
         pausar();
@@ -355,6 +425,7 @@ void jogarPartida(int idCaso) {
     prepararSuspeitosParaPartida(&banco);
 
     int interrogatoriosUsados = 0;
+    int peritoUsado = 0;
 
     // Regra de onboarding: 1 pista obrigatoria antes da primeira jogada.
     limparTela();
@@ -384,10 +455,14 @@ void jogarPartida(int idCaso) {
         printf("\n");
         printf(VERMELHO "  INVESTIGACAO ATIVA: CASO 0%d\n" RESET, idCaso);
         printf(AMARELO "  ! TENTATIVAS RESTANTES: %d/%d\n" RESET, tentativas, maxTentativas);
+        if (reputacao != NULL) {
+            printf(CIANO "  Reputacao atual: %d\n" RESET, *reputacao);
+        }
         printf("  ============================================================\n\n");
         
         printf(CIANO "  >> Digite o codigo (1 a %d)\n" RESET, maxVal);
-        printf(AMARELO "  (Digite 0 para coletar uma pista)\n");
+         printf(AMARELO "  (Digite 0 para coletar uma pista)\n");
+         printf(AMARELO "  (Digite -1 para consultar o perito)\n");
          printf(AMARELO "  (Digite %d para interrogar suspeitos)\n" RESET, comandoInterrogatorio);
          printf(AMARELO "  (Digite %d ou 'revisar pistas' para revisar pistas)\n\n" RESET, comandoHistorico);
          printf("  Pistas disponiveis: %d | Coletadas: %d\n", limitePistas, banco.pistasColetadas);
@@ -418,6 +493,21 @@ void jogarPartida(int idCaso) {
         palpite = lerPalpiteOuComando(comandoInterrogatorio, comandoHistorico);
 
         // Opção para coletar pista
+        if (palpite == -1) {
+            if (peritoUsado) {
+                strcpy(feedback, "O perito ja foi consultado neste caso.");
+                pausar();
+                continue;
+            }
+
+            int reputacaoAtual = (reputacao != NULL) ? *reputacao : 0;
+            gerarInferenciaPerito(idCaso, secreto, maxVal, banco.pistasColetadas,
+                                  reputacaoAtual, feedback, sizeof(feedback));
+            peritoUsado = 1;
+            pausar();
+            continue;
+        }
+
         if (palpite == 0) {
             if (banco.pistasColetadas >= limitePistas) {
                 strcpy(feedback, "Limite de pistas desta dificuldade atingido.");
@@ -533,6 +623,15 @@ void jogarPartida(int idCaso) {
     printf("  Caso: 0%d\n", idCaso);
     printf("  Tentativas usadas: %d de %d\n", s.tentativasUsadas, maxTentativas);
     printf("  Pistas coletadas: %d pistas\n", banco.pistasColetadas);
+
+    if (reputacao != NULL) {
+        int reputacaoAtual = atualizarReputacaoPorCaso(*reputacao, idCaso, s.venceu);
+        int delta = reputacaoAtual - *reputacao;
+        *reputacao = reputacaoAtual;
+        salvarReputacao(reputacaoAtual);
+
+        printf(CIANO "  Reputacao: %d (%+d)\n" RESET, reputacaoAtual, delta);
+    }
     
     // Exibir sumário de pistas no final
     exibirHistoricoPistas(&banco);
