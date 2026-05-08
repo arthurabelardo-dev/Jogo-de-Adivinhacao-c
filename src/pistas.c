@@ -198,7 +198,7 @@ static void inicializarPistas_Caso2(BancoPistas *banco, int numeroSecreto) {
     banco->totalPistas = 0;
     banco->totalSuspeitos = 0;
     banco->minimoRequired = 1;
-    banco->maxPistasPermitidas = 5;
+    banco->maxPistasPermitidas = 3;
     banco->reputacaoGeral = 0.75f;
     
     // ===== PISTA 1: DIRETA - Perito do cassino =====
