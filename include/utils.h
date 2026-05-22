@@ -16,5 +16,6 @@
 void limpar_tela(void);
 void pausar(void);
 int  ler_opcao(int min, int max);
+int  ler_inteiro_intervalo(int min, int max, const char *prompt);
 
 #endif

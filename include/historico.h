@@ -11,5 +11,8 @@ typedef struct {
 
 void salvar_sessao(Sessao s);
 void exibir_historico(void);
+void creditar(int valor);
+int debitar(int valor);
+int getSaldo(void);
 
 #endif

@@ -13,6 +13,7 @@ typedef struct {
 } Caso;
 
 void jogar_partida(int id_caso);
+int confirmar_caso(int id_caso);
 
 int  validar_palpite(int min, int max);
 void dar_feedback(Caso c, int palpite, int secreto);
