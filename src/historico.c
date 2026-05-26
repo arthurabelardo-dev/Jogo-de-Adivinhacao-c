@@ -5,41 +5,41 @@
 #include "utils.h"
 #include "tui.h"
 
-static int saldo_cache = 0;
-static int saldo_carregado = 0;
+static int saldoCache = 0;
+static int saldoCarregado = 0;
 
-static void carregar_perfil(void) {
+static void carregarPerfil(void) {
     FILE *f;
     char buffer[64];
 
-    if (saldo_carregado) {
+    if (saldoCarregado) {
         return;
     }
 
     f = fopen("perfil.txt", "r");
     if (f == NULL) {
-        saldo_cache = 0;
-        saldo_carregado = 1;
+        saldoCache = 0;
+        saldoCarregado = 1;
         return;
     }
 
     if (fgets(buffer, sizeof(buffer), f) != NULL) {
-        saldo_cache = atoi(buffer);
-        if (saldo_cache < 0) {
-            saldo_cache = 0;
+        saldoCache = atoi(buffer);
+        if (saldoCache < 0) {
+            saldoCache = 0;
         }
     }
 
     fclose(f);
-    saldo_carregado = 1;
+    saldoCarregado = 1;
 }
 
-static void salvar_perfil(void) {
+static void salvarPerfil(void) {
     FILE *f = fopen("perfil.txt", "w");
     if (f == NULL) {
         return;
     }
-    fprintf(f, "%d\n", saldo_cache);
+    fprintf(f, "%d\n", saldoCache);
     fclose(f);
 }
 
@@ -47,9 +47,9 @@ void creditar(int valor) {
     if (valor <= 0) {
         return;
     }
-    carregar_perfil();
-    saldo_cache += valor;
-    salvar_perfil();
+    carregarPerfil();
+    saldoCache += valor;
+    salvarPerfil();
 }
 
 int debitar(int valor) {
@@ -57,62 +57,62 @@ int debitar(int valor) {
         return 1;
     }
 
-    carregar_perfil();
-    if (valor > saldo_cache) {
+    carregarPerfil();
+    if (valor > saldoCache) {
         return 0;
     }
 
-    saldo_cache -= valor;
-    salvar_perfil();
+    saldoCache -= valor;
+    salvarPerfil();
     return 1;
 }
 
 int getSaldo(void) {
-    carregar_perfil();
-    return saldo_cache;
+    carregarPerfil();
+    return saldoCache;
 }
 
-void salvar_sessao(Sessao s) {
+void salvarSessao(Sessao s) {
     FILE *f = fopen("historico.txt", "a");
     if (f != NULL) {
-        fprintf(f, "%s\n%s\n%d\n%d\n%d\n", s.caso_nome, s.dificuldade, s.secreto, s.tentativas_usadas, s.venceu);
+        fprintf(f, "%s\n%s\n%d\n%d\n%d\n", s.casoNome, s.dificuldade, s.secreto, s.tentativasUsadas, s.venceu);
         fclose(f);
     }
 }
 
-void exibir_historico(void) {
+void exibirHistorico(void) {
     FILE *f = fopen("historico.txt", "r");
     int total = 0;
     int vitorias = 0;
-    int soma_tentativas = 0;
-    int melhor_tentativas = 999;
-    int pior_tentativas = 0;
-    char melhor_caso[50] = "-";
-    char pior_caso[50] = "-";
+    int somaTentativas = 0;
+    int melhorTentativas = 999;
+    int piorTentativas = 0;
+    char melhorCaso[50] = "-";
+    char piorCaso[50] = "-";
     
-    limpar_tela();
+    limparTela();
     printf("\n");
-    ui_banner("DOSSIE COMPLETO", "Historico e analise forense do detetive");
-    ui_stamp("ARQUIVO LOCAL", "ANALISE DE PERFIL", UI_DIM);
+    uiBanner("DOSSIE COMPLETO", "Historico e analise forense do detetive");
+    uiStamp("ARQUIVO LOCAL", "ANALISE DE PERFIL", UI_DIM);
     
     if (f == NULL) {
-        ui_section("BANCO DE SESSOES", UI_YELLOW);
-        ui_box_top();
-        ui_box_text("Nenhum historico encontrado.");
-        ui_box_text("Resolva ou tente um caso para gerar dados de perfil.");
-        ui_box_bottom();
+        uiSection("BANCO DE SESSOES", UI_YELLOW);
+        uiBoxTop();
+        uiBoxText("Nenhum historico encontrado.");
+        uiBoxText("Resolva ou tente um caso para gerar dados de perfil.");
+        uiBoxBottom();
     } else {
         Sessao s;
         char buffer[50];
 
-        ui_section("SESSOES REGISTRADAS", UI_CYAN);
-        ui_box_top();
-        ui_box_text("Caso                           Nivel    Alvo   Tent.  Status");
-        ui_box_bottom();
+        uiSection("SESSOES REGISTRADAS", UI_CYAN);
+        uiBoxTop();
+        uiBoxText("Caso                           Nivel    Alvo   Tent.  Status");
+        uiBoxBottom();
 
-        while (fgets(s.caso_nome, sizeof(s.caso_nome), f) != NULL) {
+        while (fgets(s.casoNome, sizeof(s.casoNome), f) != NULL) {
             
-            s.caso_nome[strcspn(s.caso_nome, "\n")] = '\0';
+            s.casoNome[strcspn(s.casoNome, "\n")] = '\0';
             
             fgets(s.dificuldade, sizeof(s.dificuldade), f);
             s.dificuldade[strcspn(s.dificuldade, "\n")] = '\0';
@@ -121,13 +121,13 @@ void exibir_historico(void) {
             s.secreto = atoi(buffer);
 
             fgets(buffer, sizeof(buffer), f);
-            s.tentativas_usadas = atoi(buffer);
+            s.tentativasUsadas = atoi(buffer);
 
             fgets(buffer, sizeof(buffer), f);
             s.venceu = atoi(buffer);
 
             printf("  %-30s %-8s %5d %7d   ",
-                   s.caso_nome, s.dificuldade, s.secreto, s.tentativas_usadas);
+                   s.casoNome, s.dificuldade, s.secreto, s.tentativasUsadas);
 
             if (s.venceu == 1) {
                 printf(VERDE "RESOLVIDO%s\n", RESET);
@@ -137,49 +137,49 @@ void exibir_historico(void) {
             }
 
             total++;
-            soma_tentativas += s.tentativas_usadas;
-            if (s.tentativas_usadas < melhor_tentativas) {
-                melhor_tentativas = s.tentativas_usadas;
-                strncpy(melhor_caso, s.caso_nome, sizeof(melhor_caso) - 1);
-                melhor_caso[sizeof(melhor_caso) - 1] = '\0';
+            somaTentativas += s.tentativasUsadas;
+            if (s.tentativasUsadas < melhorTentativas) {
+                melhorTentativas = s.tentativasUsadas;
+                strncpy(melhorCaso, s.casoNome, sizeof(melhorCaso) - 1);
+                melhorCaso[sizeof(melhorCaso) - 1] = '\0';
             }
-            if (s.tentativas_usadas > pior_tentativas) {
-                pior_tentativas = s.tentativas_usadas;
-                strncpy(pior_caso, s.caso_nome, sizeof(pior_caso) - 1);
-                pior_caso[sizeof(pior_caso) - 1] = '\0';
+            if (s.tentativasUsadas > piorTentativas) {
+                piorTentativas = s.tentativasUsadas;
+                strncpy(piorCaso, s.casoNome, sizeof(piorCaso) - 1);
+                piorCaso[sizeof(piorCaso) - 1] = '\0';
             }
         }
         fclose(f);
 
-        ui_section("PAINEL ESTATISTICO", UI_MAGENTA);
-        ui_box_top();
+        uiSection("PAINEL ESTATISTICO", UI_MAGENTA);
+        uiBoxTop();
         char valor[80];
         if (total > 0) {
             snprintf(valor, sizeof(valor), "%d sessoes", total);
-            ui_box_mid("Amostra", valor, UI_CYAN);
+            uiBoxMid("Amostra", valor, UI_CYAN);
             snprintf(valor, sizeof(valor), "%d/%d (%d%%)", vitorias, total, (vitorias * 100) / total);
-            ui_box_mid("Taxa de sucesso", valor, vitorias == total ? UI_GREEN : UI_YELLOW);
-            snprintf(valor, sizeof(valor), "%.1f", (double)soma_tentativas / total);
-            ui_box_mid("Media tent.", valor, UI_WHITE);
-            snprintf(valor, sizeof(valor), "%s (%d)", melhor_caso, melhor_tentativas);
-            ui_box_mid("Melhor caso", valor, UI_GREEN);
-            snprintf(valor, sizeof(valor), "%s (%d)", pior_caso, pior_tentativas);
-            ui_box_mid("Maior custo", valor, UI_RED);
+            uiBoxMid("Taxa de sucesso", valor, vitorias == total ? UI_GREEN : UI_YELLOW);
+            snprintf(valor, sizeof(valor), "%.1f", (double)somaTentativas / total);
+            uiBoxMid("Media tent.", valor, UI_WHITE);
+            snprintf(valor, sizeof(valor), "%s (%d)", melhorCaso, melhorTentativas);
+            uiBoxMid("Melhor caso", valor, UI_GREEN);
+            snprintf(valor, sizeof(valor), "%s (%d)", piorCaso, piorTentativas);
+            uiBoxMid("Maior custo", valor, UI_RED);
         }
         snprintf(valor, sizeof(valor), "%d moedas", getSaldo());
-        ui_box_mid("Saldo atual", valor, UI_MAGENTA);
-        ui_box_bottom();
+        uiBoxMid("Saldo atual", valor, UI_MAGENTA);
+        uiBoxBottom();
 
-        ui_section("MENTORIA DINAMICA", UI_YELLOW);
-        if (total > 0 && ((double)soma_tentativas / total) > 4.0) {
-            ui_box_top();
-            ui_box_wrap("Use busca binaria: teste o meio da faixa e corte metade das opcoes a cada feedback.", UI_YELLOW);
-            ui_box_wrap("Exemplo em 1-100: 50, depois 25 ou 75, depois ajuste pelo retorno maior/menor.", UI_YELLOW);
-            ui_box_bottom();
+        uiSection("MENTORIA DINAMICA", UI_YELLOW);
+        if (total > 0 && ((double)somaTentativas / total) > 4.0) {
+            uiBoxTop();
+            uiBoxWrap("Use busca binaria: teste o meio da faixa e corte metade das opcoes a cada feedback.", UI_YELLOW);
+            uiBoxWrap("Exemplo em 1-100: 50, depois 25 ou 75, depois ajuste pelo retorno maior/menor.", UI_YELLOW);
+            uiBoxBottom();
         } else if (total > 0) {
-            ui_box_top();
-            ui_box_wrap("Seu metodo esta consistente. Continue usando palpites centrais e lendo o historico de desvio.", UI_GREEN);
-            ui_box_bottom();
+            uiBoxTop();
+            uiBoxWrap("Seu metodo esta consistente. Continue usando palpites centrais e lendo o historico de desvio.", UI_GREEN);
+            uiBoxBottom();
         }
     }
     pausar();

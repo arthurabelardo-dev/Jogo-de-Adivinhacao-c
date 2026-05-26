@@ -6,19 +6,19 @@
 #include "utils.h"
 #include "tui.h"
 
-void limpar_tela(void) {
-    ui_clear();
+void limparTela(void) {
+    uiClear();
 }
 
 void pausar(void) {
-    ui_pause("Pressione ENTER para continuar...");
+    uiPause("Pressione ENTER para continuar...");
 }
 
-int ler_opcao(int min, int max) {
-    return ler_inteiro_intervalo(min, max, NULL);
+int lerOpcao(int min, int max) {
+    return lerInteiroIntervalo(min, max, NULL);
 }
 
-int ler_inteiro_intervalo(int min, int max, const char *prompt) {
+int lerInteiroIntervalo(int min, int max, const char *prompt) {
     char linha[80];
 
     while (1) {

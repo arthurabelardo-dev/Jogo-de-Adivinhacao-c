@@ -19,19 +19,19 @@
 
 #define UI_WIDTH 72
 
-static void print_padded(const char *text) {
+static void printPadded(const char *text) {
     char visible[UI_WIDTH];
-    int max_len = UI_WIDTH - 4;
+    int maxLen = UI_WIDTH - 4;
     int len = (int)strlen(text);
     int pad;
 
-    if (len > max_len) {
-        strncpy(visible, text, (size_t)max_len - 2);
-        visible[max_len - 2] = '.';
-        visible[max_len - 1] = '.';
-        visible[max_len] = '\0';
+    if (len > maxLen) {
+        strncpy(visible, text, (size_t)maxLen - 2);
+        visible[maxLen - 2] = '.';
+        visible[maxLen - 1] = '.';
+        visible[maxLen] = '\0';
         text = visible;
-        len = max_len;
+        len = maxLen;
     }
 
     pad = UI_WIDTH - 4 - len;
@@ -43,7 +43,7 @@ static void print_padded(const char *text) {
     printf("  | %s%*s |\n", text, pad, "");
 }
 
-void ui_init(void) {
+void uiInit(void) {
     setlocale(LC_ALL, "");
 
 #ifdef _WIN32
@@ -59,18 +59,18 @@ void ui_init(void) {
 #endif
 }
 
-void ui_clear(void) {
+void uiClear(void) {
     printf("\033[2J\033[H");
     fflush(stdout);
 }
 
-void ui_pause(const char *message) {
+void uiPause(const char *message) {
     printf("\n  %s%s%s", UI_DIM, message ? message : "Pressione ENTER para continuar...", UI_RESET);
     fflush(stdout);
     getchar();
 }
 
-void ui_sleep_ms(int ms) {
+void uiSleepMs(int ms) {
     if (ms <= 0) {
         return;
     }
@@ -85,23 +85,23 @@ void ui_sleep_ms(int ms) {
 #endif
 }
 
-void ui_type_line(const char *text, int ms_per_char) {
+void uiTypeLine(const char *text, int msPerChar) {
     const char *p = text;
 
     while (*p != '\0') {
         putchar(*p);
         fflush(stdout);
-        ui_sleep_ms(ms_per_char);
+        uiSleepMs(msPerChar);
         p++;
     }
     putchar('\n');
 }
 
-void ui_rule(const char *color) {
+void uiRule(const char *color) {
     printf("  %s========================================================================%s\n", color ? color : "", UI_RESET);
 }
 
-void ui_section(const char *title, const char *color) {
+void uiSection(const char *title, const char *color) {
     printf("\n  %s-- %s ", color ? color : UI_CYAN, title);
     for (int i = (int)strlen(title); i < 62; i++) {
         putchar('-');
@@ -109,10 +109,10 @@ void ui_section(const char *title, const char *color) {
     printf("%s\n", UI_RESET);
 }
 
-void ui_stamp(const char *left, const char *right, const char *color) {
-    int left_len = (int)strlen(left);
-    int right_len = (int)strlen(right);
-    int pad = UI_WIDTH - 4 - left_len - right_len;
+void uiStamp(const char *left, const char *right, const char *color) {
+    int leftLen = (int)strlen(left);
+    int rightLen = (int)strlen(right);
+    int pad = UI_WIDTH - 4 - leftLen - rightLen;
 
     if (pad < 1) {
         pad = 1;
@@ -121,7 +121,7 @@ void ui_stamp(const char *left, const char *right, const char *color) {
     printf("  %s[%s]%*s[%s]%s\n", color ? color : UI_DIM, left, pad, "", right, UI_RESET);
 }
 
-void ui_logo(void) {
+void uiLogo(void) {
     printf("  %s   ____      ____ ____  ___ __  __ ___ _   _    _    _     %s\n", UI_CYAN, UI_RESET);
     printf("  %s  / ___|    / ___|  _ \\|_ _|  \\/  |_ _| \\ | |  / \\  | |    %s\n", UI_CYAN, UI_RESET);
     printf("  %s | |   _____| |   | |_) || || |\\/| || ||  \\| | / _ \\ | |    %s\n", UI_CYAN, UI_RESET);
@@ -129,103 +129,103 @@ void ui_logo(void) {
     printf("  %s  \\____|     \\____|_| \\_\\___|_|  |_|___|_| \\_/_/   \\_\\_____|%s\n", UI_CYAN, UI_RESET);
 }
 
-void ui_banner(const char *title, const char *subtitle) {
-    ui_rule(UI_CYAN);
+void uiBanner(const char *title, const char *subtitle) {
+    uiRule(UI_CYAN);
     printf("  %s>> %-64s%s\n", UI_BOLD, title, UI_RESET);
     if (subtitle != NULL && subtitle[0] != '\0') {
         printf("  %s   %s%s\n", UI_DIM, subtitle, UI_RESET);
     }
-    ui_rule(UI_CYAN);
+    uiRule(UI_CYAN);
 }
 
-void ui_loading(const char *label, int steps, int ms) {
+void uiLoading(const char *label, int steps, int ms) {
     printf("  %s%s%s [", UI_DIM, label, UI_RESET);
     fflush(stdout);
     for (int i = 0; i < steps; i++) {
         putchar('#');
         fflush(stdout);
-        ui_sleep_ms(ms);
+        uiSleepMs(ms);
     }
     printf("] %sOK%s\n", UI_GREEN, UI_RESET);
 }
 
-void ui_box_top(void) {
+void uiBoxTop(void) {
     printf("  +--------------------------------------------------------------------+\n");
 }
 
-void ui_box_mid(const char *label, const char *value, const char *color) {
+void uiBoxMid(const char *label, const char *value, const char *color) {
     char line[96];
     snprintf(line, sizeof(line), "%-18s %s", label, value);
     printf("%s", color ? color : "");
-    print_padded(line);
+    printPadded(line);
     printf("%s", UI_RESET);
 }
 
-void ui_box_text(const char *text) {
-    print_padded(text);
+void uiBoxText(const char *text) {
+    printPadded(text);
 }
 
-void ui_box_wrap(const char *text, const char *color) {
+void uiBoxWrap(const char *text, const char *color) {
     char line[UI_WIDTH];
-    int line_len = 0;
-    int max_len = UI_WIDTH - 4;
+    int lineLen = 0;
+    int maxLen = UI_WIDTH - 4;
     const char *p = text;
 
     printf("%s", color ? color : "");
     while (*p != '\0') {
         char word[48];
-        int word_len = 0;
+        int wordLen = 0;
 
         while (*p == ' ') {
             p++;
         }
-        while (*p != '\0' && *p != ' ' && word_len < (int)sizeof(word) - 1) {
-            word[word_len++] = *p++;
+        while (*p != '\0' && *p != ' ' && wordLen < (int)sizeof(word) - 1) {
+            word[wordLen++] = *p++;
         }
-        word[word_len] = '\0';
+        word[wordLen] = '\0';
 
-        if (word_len == 0) {
+        if (wordLen == 0) {
             break;
         }
 
-        if (line_len > 0 && line_len + word_len + 1 > max_len) {
-            line[line_len] = '\0';
-            print_padded(line);
-            line_len = 0;
+        if (lineLen > 0 && lineLen + wordLen + 1 > maxLen) {
+            line[lineLen] = '\0';
+            printPadded(line);
+            lineLen = 0;
         }
 
-        if (line_len > 0) {
-            line[line_len++] = ' ';
+        if (lineLen > 0) {
+            line[lineLen++] = ' ';
         }
 
-        strncpy(line + line_len, word, (size_t)(max_len - line_len));
-        line_len += word_len;
-        if (line_len > max_len) {
-            line_len = max_len;
+        strncpy(line + lineLen, word, (size_t)(maxLen - lineLen));
+        lineLen += wordLen;
+        if (lineLen > maxLen) {
+            lineLen = maxLen;
         }
     }
 
-    if (line_len > 0) {
-        line[line_len] = '\0';
-        print_padded(line);
+    if (lineLen > 0) {
+        line[lineLen] = '\0';
+        printPadded(line);
     }
     printf("%s", UI_RESET);
 }
 
-void ui_box_bottom(void) {
+void uiBoxBottom(void) {
     printf("  +--------------------------------------------------------------------+\n");
 }
 
-void ui_menu_item(int number, const char *title, const char *meta, const char *status, const char *color) {
+void uiMenuItem(int number, const char *title, const char *meta, const char *status, const char *color) {
     char line[96];
 
     snprintf(line, sizeof(line), "[%d] %-19s %-28s %s", number, title, meta, status);
     printf("%s", color ? color : "");
-    print_padded(line);
+    printPadded(line);
     printf("%s", UI_RESET);
 }
 
-void ui_meter(const char *label, int value, int max, const char *color) {
+void uiMeter(const char *label, int value, int max, const char *color) {
     int filled;
     int width = 30;
 
@@ -247,7 +247,7 @@ void ui_meter(const char *label, int value, int max, const char *color) {
     printf("] %d/%d%s\n", value, max, UI_RESET);
 }
 
-void ui_scan_bar(int value, int min, int max) {
+void uiScanBar(int value, int min, int max) {
     int width = 52;
     int position;
 
@@ -271,11 +271,11 @@ void ui_scan_bar(int value, int min, int max) {
     printf("] %d\n", max);
 }
 
-void ui_prompt(const char *label) {
+void uiPrompt(const char *label) {
     printf("\n  %s[%s]%s > ", UI_CYAN, label, UI_RESET);
     fflush(stdout);
 }
 
-void ui_alert(const char *tag, const char *message, const char *color) {
+void uiAlert(const char *tag, const char *message, const char *color) {
     printf("  %s[%s]%s %s\n", color ? color : UI_YELLOW, tag, UI_RESET, message);
 }

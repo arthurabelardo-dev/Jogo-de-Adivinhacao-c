@@ -14,26 +14,26 @@
 #define UI_BG_BLUE    "\033[44m"
 #define UI_BG_RED     "\033[41m"
 
-void ui_init(void);
-void ui_clear(void);
-void ui_pause(const char *message);
-void ui_sleep_ms(int ms);
-void ui_type_line(const char *text, int ms_per_char);
-void ui_rule(const char *color);
-void ui_section(const char *title, const char *color);
-void ui_stamp(const char *left, const char *right, const char *color);
-void ui_logo(void);
-void ui_banner(const char *title, const char *subtitle);
-void ui_loading(const char *label, int steps, int ms);
-void ui_box_top(void);
-void ui_box_mid(const char *label, const char *value, const char *color);
-void ui_box_text(const char *text);
-void ui_box_wrap(const char *text, const char *color);
-void ui_box_bottom(void);
-void ui_menu_item(int number, const char *title, const char *meta, const char *status, const char *color);
-void ui_meter(const char *label, int value, int max, const char *color);
-void ui_scan_bar(int value, int min, int max);
-void ui_prompt(const char *label);
-void ui_alert(const char *tag, const char *message, const char *color);
+void uiInit(void);
+void uiClear(void);
+void uiPause(const char *message);
+void uiSleepMs(int ms);
+void uiTypeLine(const char *text, int msPerChar);
+void uiRule(const char *color);
+void uiSection(const char *title, const char *color);
+void uiStamp(const char *left, const char *right, const char *color);
+void uiLogo(void);
+void uiBanner(const char *title, const char *subtitle);
+void uiLoading(const char *label, int steps, int ms);
+void uiBoxTop(void);
+void uiBoxMid(const char *label, const char *value, const char *color);
+void uiBoxText(const char *text);
+void uiBoxWrap(const char *text, const char *color);
+void uiBoxBottom(void);
+void uiMenuItem(int number, const char *title, const char *meta, const char *status, const char *color);
+void uiMeter(const char *label, int value, int max, const char *color);
+void uiScanBar(int value, int min, int max);
+void uiPrompt(const char *label);
+void uiAlert(const char *tag, const char *message, const char *color);
 
 #endif

@@ -7,128 +7,128 @@
 #include "historico.h"
 #include "tui.h"
 
-static void limpar_quebra(char *texto) {
+static void limparQuebra(char *texto) {
     texto[strcspn(texto, "\r\n")] = '\0';
 }
 
-static int tela_login(void) {
-    const char *usuario_valido = "detetive";
-    const char *senha_valida = "1234";
+static int telaLogin(void) {
+    const char *usuarioValido = "detetive";
+    const char *senhaValida = "1234";
     int tentativas = 3;
 
     while (tentativas > 0) {
         char usuario[64];
         char senha[64];
 
-        limpar_tela();
+        limparTela();
         printf("\n");
-        ui_logo();
+        uiLogo();
         printf("\n");
-        ui_banner("C-Criminal // TERMINAL FORENSE", "Departamento de Investigacao - acesso restrito");
-        ui_stamp("CANAL CRIPTOGRAFADO", "VERSAO 2.0", UI_DIM);
+        uiBanner("C-Criminal // TERMINAL FORENSE", "Departamento de Investigacao - acesso restrito");
+        uiStamp("CANAL CRIPTOGRAFADO", "VERSAO 2.0", UI_DIM);
         printf("\n");
-        ui_box_top();
-        ui_box_mid("Terminal", "conectado ao servidor de evidencias", UI_CYAN);
-        ui_box_mid("Usuario padrao", "detetive", UI_WHITE);
-        ui_box_mid("Tentativas", tentativas == 1 ? "ultima tentativa" : "restantes", UI_YELLOW);
-        ui_box_bottom();
+        uiBoxTop();
+        uiBoxMid("Terminal", "conectado ao servidor de evidencias", UI_CYAN);
+        uiBoxMid("Usuario padrao", "detetive", UI_WHITE);
+        uiBoxMid("Tentativas", tentativas == 1 ? "ultima tentativa" : "restantes", UI_YELLOW);
+        uiBoxBottom();
 
-        ui_prompt("USUARIO");
+        uiPrompt("USUARIO");
         if (fgets(usuario, sizeof(usuario), stdin) == NULL) {
             clearerr(stdin);
             continue;
         }
-        limpar_quebra(usuario);
+        limparQuebra(usuario);
 
-        ui_prompt("SENHA");
+        uiPrompt("SENHA");
         if (fgets(senha, sizeof(senha), stdin) == NULL) {
             clearerr(stdin);
             continue;
         }
-        limpar_quebra(senha);
+        limparQuebra(senha);
 
         printf("\n");
-        ui_loading("Validando credencial", 18, 20);
-        ui_loading("Sincronizando banco de evidencias", 18, 16);
+        uiLoading("Validando credencial", 18, 20);
+        uiLoading("Sincronizando banco de evidencias", 18, 16);
 
-        if (strcmp(usuario, usuario_valido) == 0 && strcmp(senha, senha_valida) == 0) {
-            ui_alert("ACESSO", "Credencial liberada. Boa cacada, Detetive.", UI_GREEN);
-            ui_pause("Pressione ENTER para continuar...");
+        if (strcmp(usuario, usuarioValido) == 0 && strcmp(senha, senhaValida) == 0) {
+            uiAlert("ACESSO", "Credencial liberada. Boa cacada, Detetive.", UI_GREEN);
+            uiPause("Pressione ENTER para continuar...");
             return 1;
         }
 
         tentativas--;
-        ui_alert("FALHA", "Usuario ou senha invalidos.", UI_RED);
+        uiAlert("FALHA", "Usuario ou senha invalidos.", UI_RED);
         if (tentativas > 0) {
-            ui_pause("Pressione ENTER para tentar novamente...");
+            uiPause("Pressione ENTER para tentar novamente...");
         }
     }
 
-    limpar_tela();
+    limparTela();
     printf("\n");
-    ui_banner("ACESSO BLOQUEADO", "Muitas tentativas invalidas");
-    ui_alert("SISTEMA", "Terminal bloqueado por seguranca.", UI_RED);
-    ui_pause("Pressione ENTER para encerrar...");
+    uiBanner("ACESSO BLOQUEADO", "Muitas tentativas invalidas");
+    uiAlert("SISTEMA", "Terminal bloqueado por seguranca.", UI_RED);
+    uiPause("Pressione ENTER para encerrar...");
     return 0;
 }
 
-static void exibir_menu(void) {
-    limpar_tela();
+static void exibirMenu(void) {
+    limparTela();
     printf("\n");
-    ui_logo();
+    uiLogo();
     printf("\n");
-    ui_banner("DETETIVE DO TERMINAL", "Central de casos ativos");
-    ui_stamp("PLANTAO FORENSE", "3 CASOS ABERTOS", UI_DIM);
-    ui_section("MURAL DE INVESTIGACOES", UI_CYAN);
+    uiBanner("DETETIVE DO TERMINAL", "Central de casos ativos");
+    uiStamp("PLANTAO FORENSE", "3 CASOS ABERTOS", UI_DIM);
+    uiSection("MURAL DE INVESTIGACOES", UI_CYAN);
 
-    ui_box_top();
-    ui_menu_item(1, "Magnata", "Cofre termico", "FACIL", UI_GREEN);
-    ui_menu_item(2, "Cassino", "Frequencia de fuga", "MEDIO", UI_YELLOW);
-    ui_menu_item(3, "Apocalipse", "Porta infectada", "DIFICIL", UI_RED);
-    ui_menu_item(4, "Dossie", "Historico e mentoria", "ARQUIVO", UI_CYAN);
-    ui_menu_item(5, "Sair", "Encerrar terminal", "OFFLINE", UI_DIM);
-    ui_box_bottom();
-    ui_prompt("COMANDO");
+    uiBoxTop();
+    uiMenuItem(1, "Magnata", "Cofre termico", "FACIL", UI_GREEN);
+    uiMenuItem(2, "Cassino", "Frequencia de fuga", "MEDIO", UI_YELLOW);
+    uiMenuItem(3, "Apocalipse", "Porta infectada", "DIFICIL", UI_RED);
+    uiMenuItem(4, "Dossie", "Historico e mentoria", "ARQUIVO", UI_CYAN);
+    uiMenuItem(5, "Sair", "Encerrar terminal", "OFFLINE", UI_DIM);
+    uiBoxBottom();
+    uiPrompt("COMANDO");
 }
 
 int main(void) {
     int opcao;
 
-    ui_init();
+    uiInit();
     srand((unsigned int)time(NULL));
 
-    if (!tela_login()) {
+    if (!telaLogin()) {
         return 1;
     }
 
     do {
-        exibir_menu();
-        opcao = ler_opcao(1, 5);
+        exibirMenu();
+        opcao = lerOpcao(1, 5);
 
         switch (opcao) {
             case 1:
-                if (confirmar_caso(1)) {
-                    jogar_partida(1);
+                if (confirmarCaso(1)) {
+                    jogarPartida(1);
                 }
                 break;
             case 2:
-                if (confirmar_caso(2)) {
-                    jogar_partida(2);
+                if (confirmarCaso(2)) {
+                    jogarPartida(2);
                 }
                 break;
             case 3:
-                if (confirmar_caso(3)) {
-                    jogar_partida(3);
+                if (confirmarCaso(3)) {
+                    jogarPartida(3);
                 }
                 break;
             case 4:
-                exibir_historico();
+                exibirHistorico();
                 break;
             case 5:
-                limpar_tela();
+                limparTela();
                 printf("\n");
-                ui_banner("ENCERRANDO SISTEMA", "Arquivando sessoes locais");
-                ui_loading("Desconectando terminal", 20, 18);
+                uiBanner("ENCERRANDO SISTEMA", "Arquivando sessoes locais");
+                uiLoading("Desconectando terminal", 20, 18);
                 printf("\n  Ate a proxima investigacao, Detetive.\n\n");
                 break;
         }

@@ -13,9 +13,9 @@
   #define CLEAR "clear"
 #endif
 
-void limpar_tela(void);
+void limparTela(void);
 void pausar(void);
-int  ler_opcao(int min, int max);
-int  ler_inteiro_intervalo(int min, int max, const char *prompt);
+int  lerOpcao(int min, int max);
+int  lerInteiroIntervalo(int min, int max, const char *prompt);
 
 #endif
