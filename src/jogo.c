@@ -15,6 +15,53 @@
 #define MAX_POOL_PISTAS 12
 #define MAX_HISTORIA 8
 #define MAX_CARACTERISTICAS 4
+#define REP_ALTA 70
+#define REP_BAIXA 30
+#define CONFIANCA_ALTA 70
+#define CONFIANCA_BAIXA 30
+#define CONFIANCA_SCANNER 50
+
+static int clampPercent(int valor) {
+    if (valor < 0) {
+        return 0;
+    }
+    if (valor > 100) {
+        return 100;
+    }
+    return valor;
+}
+
+int chancePistaFalsaPorReputacao(int reputacao) {
+    const int base = 20;
+    if (reputacao >= REP_ALTA) {
+        return base / 2;
+    }
+    if (reputacao < REP_BAIXA) {
+        return clampPercent((base * 180) / 100);
+    }
+    return base;
+}
+
+int chanceMentiraPorReputacao(int reputacao) {
+    if (reputacao >= REP_ALTA) {
+        return 10;
+    }
+    if (reputacao < REP_BAIXA) {
+        return 50;
+    }
+    return 25;
+}
+
+int peritoPrecisoPorReputacao(int reputacao) {
+    return reputacao >= REP_ALTA;
+}
+
+static int calcularTentativasPorConfianca(int confianca, int tentativasBase) {
+    if (confianca < CONFIANCA_BAIXA && tentativasBase > 1) {
+        return tentativasBase - 1;
+    }
+    return tentativasBase;
+}
 
 typedef enum {
     PROP_PAR = 0,
@@ -63,6 +110,15 @@ typedef struct {
     const char *textoTrue;
     const char *textoFalse;
 } PistaInfo;
+
+typedef struct {
+    int segundaChance;
+    int analiseExtra;
+    int scannerForense;
+    int intuicao;
+    int bonusTentativas;
+    int bonusInterrogatorio;
+} ItensAtivosCaso;
 
 static const InterrogadoInfo interrogados[][MAX_INTERROGADOS] = {
     {
@@ -116,13 +172,6 @@ static const InterrogadoInfo interrogados[][MAX_INTERROGADOS] = {
          "No relatorio final, a soma dos algarismos da porta era par.",
          "No relatorio final, a soma dos algarismos da porta era impar."}
     }
-};
-
-/* 1 mentiroso no facil, 2 no medio, 3 no dificil */
-static const int mentirosos[][MAX_INTERROGADOS] = {
-    {0, 1, 0, 0, 0},
-    {0, 0, 1, 0, 1},
-    {0, 0, 1, 1, 1}
 };
 
 static const char *caracteristicasSuspeitos[][MAX_INTERROGADOS][MAX_CARACTERISTICAS] = {
@@ -450,6 +499,99 @@ static void selecionarPistasAleatorias(int idCaso, int quantidade, int seleciona
     }
 }
 
+static void prepararPistasFalsasAtivas(int reputacao, int maxPistas, int pistasFalsas[MAX_PISTAS]) {
+    for (int i = 0; i < MAX_PISTAS; i++) {
+        pistasFalsas[i] = 0;
+    }
+    for (int i = 0; i < maxPistas && i < MAX_PISTAS; i++) {
+        pistasFalsas[i] = ((rand() % 100) < chancePistaFalsaPorReputacao(reputacao));
+    }
+}
+
+static int removerUmaPistaFalsaAtiva(int maxPistas, int pistasFalsas[MAX_PISTAS]) {
+    for (int i = 0; i < maxPistas && i < MAX_PISTAS; i++) {
+        if (pistasFalsas[i]) {
+            pistasFalsas[i] = 0;
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static void prepararItensAtivosCaso(ItensAtivosCaso *itens, int confiancaAtual) {
+    int opcao;
+    memset(itens, 0, sizeof(*itens));
+
+    limparTela();
+    printf("\n");
+    uiBanner("LOADOUT PRE-CASO", "Ative itens estrategicos");
+    uiSection("INVENTARIO", UI_CYAN);
+    uiBoxTop();
+    {
+        char linha[160];
+        snprintf(linha, sizeof(linha), "Segunda Chance: %d", getQuantidadeItem(ITEM_SEGUNDA_CHANCE));
+        uiBoxWrap(linha, UI_WHITE);
+        snprintf(linha, sizeof(linha), "Analise Extra: %d", getQuantidadeItem(ITEM_ANALISE_EXTRA));
+        uiBoxWrap(linha, UI_WHITE);
+        snprintf(linha, sizeof(linha), "Scanner Forense: %d", getQuantidadeItem(ITEM_SCANNER_FORENSE));
+        uiBoxWrap(linha, UI_WHITE);
+        snprintf(linha, sizeof(linha), "Intuicao: %d", getQuantidadeItem(ITEM_INTUICAO));
+        uiBoxWrap(linha, UI_WHITE);
+        snprintf(linha, sizeof(linha), "+2 Tentativas: %d", getQuantidadeItem(ITEM_MAIS_2_TENTATIVAS));
+        uiBoxWrap(linha, UI_WHITE);
+        snprintf(linha, sizeof(linha), "+1 Interrogatorio: %d", getQuantidadeItem(ITEM_MAIS_1_INTERROGATORIO));
+        uiBoxWrap(linha, UI_WHITE);
+    }
+    uiBoxBottom();
+
+    if (getQuantidadeItem(ITEM_SEGUNDA_CHANCE) > 0) {
+        uiPrompt("Ativar Segunda Chance? [1=sim,2=nao]");
+        opcao = lerOpcao(1, 2);
+        if (opcao == 1 && consumirItem(ITEM_SEGUNDA_CHANCE)) {
+            itens->segundaChance = 1;
+        }
+    }
+    if (getQuantidadeItem(ITEM_ANALISE_EXTRA) > 0) {
+        uiPrompt("Ativar Analise Extra? [1=sim,2=nao]");
+        opcao = lerOpcao(1, 2);
+        if (opcao == 1 && consumirItem(ITEM_ANALISE_EXTRA)) {
+            itens->analiseExtra = 1;
+        }
+    }
+    if (getQuantidadeItem(ITEM_SCANNER_FORENSE) > 0) {
+        if (confiancaAtual >= CONFIANCA_SCANNER) {
+            uiPrompt("Ativar Scanner Forense? [1=sim,2=nao]");
+            opcao = lerOpcao(1, 2);
+            if (opcao == 1 && consumirItem(ITEM_SCANNER_FORENSE)) {
+                itens->scannerForense = 1;
+            }
+        } else {
+            uiAlert("BLOQUEADO", "Scanner Forense exige confianca >= 50.", UI_YELLOW);
+        }
+    }
+    if (getQuantidadeItem(ITEM_INTUICAO) > 0) {
+        uiPrompt("Ativar Intuicao? [1=sim,2=nao]");
+        opcao = lerOpcao(1, 2);
+        if (opcao == 1 && consumirItem(ITEM_INTUICAO)) {
+            itens->intuicao = 1;
+        }
+    }
+    if (getQuantidadeItem(ITEM_MAIS_2_TENTATIVAS) > 0) {
+        uiPrompt("Ativar +2 Tentativas? [1=sim,2=nao]");
+        opcao = lerOpcao(1, 2);
+        if (opcao == 1 && consumirItem(ITEM_MAIS_2_TENTATIVAS)) {
+            itens->bonusTentativas = 1;
+        }
+    }
+    if (getQuantidadeItem(ITEM_MAIS_1_INTERROGATORIO) > 0) {
+        uiPrompt("Ativar +1 Interrogatorio? [1=sim,2=nao]");
+        opcao = lerOpcao(1, 2);
+        if (opcao == 1 && consumirItem(ITEM_MAIS_1_INTERROGATORIO)) {
+            itens->bonusInterrogatorio = 1;
+        }
+    }
+}
+
 static void exibirIlustracaoCena(const CasoInfo *caso) {
     uiSection("ILUSTRACAO DA CENA", UI_CYAN);
     uiBoxTop();
@@ -683,7 +825,8 @@ static void exibirHistoriaVitima(const CasoInfo *caso, int idxCaso) {
 }
 
 static void aplicarPista(char *feedback, size_t tamanho, const CasoInfo *caso, int pistaNumero,
-                          int secreto, const int pistasSelecionadas[MAX_PISTAS]) {
+                          int secreto, const int pistasSelecionadas[MAX_PISTAS], int reputacao,
+                          const int pistasFalsas[MAX_PISTAS], int forcarVerdade) {
     const PistaInfo *pool = NULL;
     int total = 0;
     int idxPool;
@@ -702,8 +845,25 @@ static void aplicarPista(char *feedback, size_t tamanho, const CasoInfo *caso, i
     }
 
     pista = &pool[idxPool];
-    snprintf(feedback, tamanho, "PERITO: %s",
-             segredoPossui(secreto, pista->propriedade) ? pista->textoTrue : pista->textoFalse);
+    {
+        int verdade = segredoPossui(secreto, pista->propriedade);
+        int pistaFalsa = 0;
+        if (!forcarVerdade) {
+            pistaFalsa = pistasFalsas[pistaNumero - 1];
+        }
+        const char *texto;
+        if (pistaFalsa) {
+            verdade = !verdade;
+        }
+        texto = verdade ? pista->textoTrue : pista->textoFalse;
+        if (peritoPrecisoPorReputacao(reputacao)) {
+            snprintf(feedback, tamanho, "PERITO (alta precisao): %s", texto);
+        } else if (reputacao < REP_BAIXA) {
+            snprintf(feedback, tamanho, "PERITO (leitura parcial): %s", texto);
+        } else {
+            snprintf(feedback, tamanho, "PERITO: %s", texto);
+        }
+    }
 }
 
 static void exibirArquivoEvidencias(const CasoInfo *caso, int pistasUsadas,
@@ -746,12 +906,14 @@ static void exibirArquivoEvidencias(const CasoInfo *caso, int pistasUsadas,
 
 static void consultarInterrogado(char *feedback, size_t tamanho, const CasoInfo *caso, int secreto,
                                   int idxCaso, int ouvidos[MAX_INTERROGADOS], int *consultasUsadas,
-                                  char depoimentos[MAX_CONSULTAS][MAX_FEEDBACK], int *totalDepoimentos) {
+                                  char depoimentos[MAX_CONSULTAS][MAX_FEEDBACK], int *totalDepoimentos,
+                                  int reputacao, int *deltaReputacao) {
     int opcao;
     const InterrogadoInfo *escolhido;
     int propriedadeReal;
     int afirmacao;
     int mente;
+    (void)caso;
 
     uiSection("REDE DE INTERROGADOS", UI_MAGENTA);
     uiBoxTop();
@@ -779,8 +941,11 @@ static void consultarInterrogado(char *feedback, size_t tamanho, const CasoInfo 
 
     escolhido = &interrogados[idxCaso][opcao - 1];
     propriedadeReal = segredoPossui(secreto, escolhido->propriedade);
-    mente = mentirosos[idxCaso][opcao - 1];
+    mente = (rand() % 100) < chanceMentiraPorReputacao(reputacao);
     afirmacao = mente ? !propriedadeReal : propriedadeReal;
+    if (mente) {
+        *deltaReputacao -= 5;
+    }
 
     snprintf(feedback, tamanho, "DEPOIMENTO (%s): %s",
              escolhido->nome, afirmacao ? escolhido->falaTrue : escolhido->falaFalse);
@@ -829,8 +994,12 @@ void jogarPartida(int idCaso) {
     const CasoInfo *caso = obterCaso(idCaso);
     int idxCaso = indiceCaso(idCaso);
     int pistasSorteadas[MAX_PISTAS];
+    int pistasFalsasAtivas[MAX_PISTAS];
     int secreto = caso->min + (rand() % (caso->max - caso->min + 1));
-    int tentativas = caso->tentativas;
+    int confiancaAtual = getConfiancaDelegacia();
+    int tentativas = calcularTentativasPorConfianca(confiancaAtual, caso->tentativas);
+    int maxInterrogatorios = MAX_CONSULTAS;
+    int segundaChanceDisponivel = 0;
     int pistasUsadas = 0;
     int interrogatoriosUsados = 0;
     int penalidadesRitmo = 0;
@@ -843,7 +1012,19 @@ void jogarPartida(int idCaso) {
     RegistroPalpite registros[MAX_REGISTROS];
     int contPalpites = 0;
     char feedback[MAX_FEEDBACK] = "Central online. Cruze pistas e depoimentos antes de arriscar.";
+    int reputacaoAtual = getScore();
+    int deltaReputacao = 0;
+    ItensAtivosCaso itens;
     Sessao s;
+
+    prepararItensAtivosCaso(&itens, confiancaAtual);
+    if (itens.bonusTentativas) {
+        tentativas += 2;
+    }
+    if (itens.bonusInterrogatorio) {
+        maxInterrogatorios += 1;
+    }
+    segundaChanceDisponivel = itens.segundaChance;
 
     exibirRelatorio(caso);
     exibirTutorialBasico(caso);
@@ -856,6 +1037,36 @@ void jogarPartida(int idCaso) {
     s.venceu = 0;
 
     selecionarPistasAleatorias(caso->id, caso->maxPistas, pistasSorteadas);
+    prepararPistasFalsasAtivas(reputacaoAtual, caso->maxPistas, pistasFalsasAtivas);
+    if (itens.scannerForense) {
+        if (removerUmaPistaFalsaAtiva(caso->maxPistas, pistasFalsasAtivas)) {
+            strcpy(feedback, "SCANNER FORENSE: uma pista falsa foi removida do conjunto ativo.");
+        } else {
+            strcpy(feedback, "SCANNER FORENSE: nao havia pista falsa ativa para remover.");
+        }
+    }
+    if (itens.intuicao) {
+        char intuicaoLinha[120];
+        int minInt = secreto - 10;
+        int maxInt = secreto + 10;
+        if (minInt < caso->min) {
+            minInt = caso->min;
+        }
+        if (maxInt > caso->max) {
+            maxInt = caso->max;
+        }
+        snprintf(intuicaoLinha, sizeof(intuicaoLinha),
+                 "INTUICAO: alvo entre %d e %d.", minInt, maxInt);
+        strncpy(feedback, intuicaoLinha, sizeof(feedback) - 1);
+        feedback[sizeof(feedback) - 1] = '\0';
+    }
+    if (itens.analiseExtra && pistasUsadas < caso->maxPistas) {
+        pistasUsadas++;
+        aplicarPista(feedback, sizeof(feedback), caso, pistasUsadas, secreto, pistasSorteadas, reputacaoAtual,
+                     pistasFalsasAtivas, 1);
+        strncpy(pistasRegistradas[pistasUsadas - 1], feedback, MAX_FEEDBACK - 1);
+        pistasRegistradas[pistasUsadas - 1][MAX_FEEDBACK - 1] = '\0';
+    }
 
     while (tentativas > 0) {
         int palpite;
@@ -866,11 +1077,16 @@ void jogarPartida(int idCaso) {
         uiStamp(caso->codinome, tentativas <= 2 ? "RISCO ALTO" : "SISTEMA ESTAVEL",
                  tentativas <= 2 ? UI_RED : UI_GREEN);
         uiSection("PAINEL DE CONTROLE", UI_CYAN);
-        uiMeter("Integridade", tentativas, caso->tentativas, tentativas <= 2 ? UI_RED : UI_GREEN);
+        uiMeter("Integridade", tentativas, tentativas > caso->tentativas ? tentativas : caso->tentativas,
+                tentativas <= 2 ? UI_RED : UI_GREEN);
         uiMeter("Pistas de campo", caso->maxPistas - pistasUsadas, caso->maxPistas,
                  pistasUsadas == caso->maxPistas ? UI_RED : UI_CYAN);
-        uiMeter("Interrogatorios", MAX_CONSULTAS - interrogatoriosUsados, MAX_CONSULTAS,
-                 interrogatoriosUsados == MAX_CONSULTAS ? UI_RED : UI_MAGENTA);
+        uiMeter("Interrogatorios", maxInterrogatorios - interrogatoriosUsados, maxInterrogatorios,
+                 interrogatoriosUsados == maxInterrogatorios ? UI_RED : UI_MAGENTA);
+        uiMeter("Reputacao", reputacaoAtual, 100,
+                 reputacaoAtual >= REP_ALTA ? UI_GREEN : (reputacaoAtual < REP_BAIXA ? UI_RED : UI_YELLOW));
+        uiMeter("Confianca", confiancaAtual, 100,
+                 confiancaAtual >= CONFIANCA_ALTA ? UI_GREEN : (confiancaAtual < CONFIANCA_BAIXA ? UI_RED : UI_YELLOW));
 
         uiSection("LEITURA ATUAL", UI_YELLOW);
         uiBoxTop();
@@ -878,6 +1094,18 @@ void jogarPartida(int idCaso) {
         char faixa[40];
         snprintf(faixa, sizeof(faixa), "%d a %d", caso->min, caso->max);
         uiBoxMid("Faixa valida", faixa, UI_WHITE);
+        {
+            char reputacaoLinha[48];
+            snprintf(reputacaoLinha, sizeof(reputacaoLinha), "%d [%+d]", reputacaoAtual, deltaReputacao);
+            uiBoxMid("Reputacao", reputacaoLinha,
+                     reputacaoAtual >= REP_ALTA ? UI_GREEN : (reputacaoAtual < REP_BAIXA ? UI_RED : UI_YELLOW));
+        }
+        {
+            char confLinha[48];
+            snprintf(confLinha, sizeof(confLinha), "%d", confiancaAtual);
+            uiBoxMid("Confianca", confLinha,
+                     confiancaAtual >= CONFIANCA_ALTA ? UI_GREEN : (confiancaAtual < CONFIANCA_BAIXA ? UI_RED : UI_YELLOW));
+        }
         uiBoxMid("Feedback", "analise abaixo", UI_YELLOW);
         uiBoxWrap(feedback, UI_YELLOW);
         uiBoxBottom();
@@ -903,25 +1131,32 @@ void jogarPartida(int idCaso) {
         }
 
         if (palpite == -1) {
-            if (interrogatoriosUsados < MAX_CONSULTAS) {
+            if (interrogatoriosUsados < maxInterrogatorios) {
+                int deltaAntes = deltaReputacao;
                 consultarInterrogado(feedback, sizeof(feedback), caso, secreto, idxCaso,
                                       interrogadosOuvidos, &interrogatoriosUsados,
-                                      depoimentos, &totalDepoimentos);
+                                      depoimentos, &totalDepoimentos, reputacaoAtual, &deltaReputacao);
+                if (deltaReputacao < deltaAntes) {
+                    decrementar(deltaAntes - deltaReputacao);
+                }
             } else {
-                strcpy(feedback, "CENTRAL: Limite de 2 interrogatorios atingido.");
+                strcpy(feedback, "CENTRAL: Limite de interrogatorios atingido.");
             }
+            reputacaoAtual = getScore();
             continue;
         }
 
         if (palpite == 0) {
             if (pistasUsadas < caso->maxPistas) {
                 pistasUsadas++;
-                aplicarPista(feedback, sizeof(feedback), caso, pistasUsadas, secreto, pistasSorteadas);
+                aplicarPista(feedback, sizeof(feedback), caso, pistasUsadas, secreto, pistasSorteadas, reputacaoAtual,
+                             pistasFalsasAtivas, 0);
                 strncpy(pistasRegistradas[pistasUsadas - 1], feedback, MAX_FEEDBACK - 1);
                 pistasRegistradas[pistasUsadas - 1][MAX_FEEDBACK - 1] = '\0';
             } else {
                 strcpy(feedback, "PERITO: Nao ha novas pistas de campo disponiveis.");
             }
+            reputacaoAtual = getScore();
             continue;
         }
 
@@ -971,7 +1206,16 @@ void jogarPartida(int idCaso) {
             snprintf(feedback, sizeof(feedback), "%s Leitura: %s.",
                      caso->menor, registros[contPalpites - 1].leitura);
         }
-        tentativas--;
+        if (segundaChanceDisponivel) {
+            segundaChanceDisponivel = 0;
+            snprintf(feedback, sizeof(feedback),
+                     "SEGUNDA CHANCE: tentativa preservada. Ajuste a estrategia e tente de novo.");
+        } else {
+            tentativas--;
+            deltaReputacao -= 2;
+            decrementar(2);
+            reputacaoAtual = getScore();
+        }
 
         printf("\n");
         uiLoading("Processando leitura", 14, 14);
@@ -981,6 +1225,26 @@ void jogarPartida(int idCaso) {
     }
 
     s.tentativasUsadas = contPalpites;
+    if (s.venceu) {
+        deltaReputacao += 10;
+    } else {
+        deltaReputacao -= 8;
+    }
+
+    if (s.venceu) {
+        incrementar(10);
+    } else {
+        decrementar(8);
+    }
+    if (s.venceu && s.tentativasUsadas <= 2) {
+        aumentarConfianca(6);
+    } else if (s.venceu) {
+        aumentarConfianca(3);
+    } else {
+        reduzirConfianca(6);
+    }
+    reputacaoAtual = getScore();
+    confiancaAtual = getConfiancaDelegacia();
 
     limparTela();
     int pontos = calcularPontos(caso, tentativas, pistasUsadas, interrogatoriosUsados,
@@ -1017,6 +1281,11 @@ void jogarPartida(int idCaso) {
     snprintf(valor, sizeof(valor), "%d", pontos);
     uiBoxMid("Pontuacao", valor, UI_CYAN);
     uiBoxMid("Rank", rankInvestigativo(pontos, s.venceu), UI_MAGENTA);
+    snprintf(valor, sizeof(valor), "%d [%+d]", reputacaoAtual, deltaReputacao);
+    uiBoxMid("Reputacao final", valor, reputacaoAtual >= REP_ALTA ? UI_GREEN : (reputacaoAtual < REP_BAIXA ? UI_RED : UI_YELLOW));
+    snprintf(valor, sizeof(valor), "%d", confiancaAtual);
+    uiBoxMid("Confianca final", valor,
+             confiancaAtual >= CONFIANCA_ALTA ? UI_GREEN : (confiancaAtual < CONFIANCA_BAIXA ? UI_RED : UI_YELLOW));
     uiBoxBottom();
 
     creditar(recompensa);

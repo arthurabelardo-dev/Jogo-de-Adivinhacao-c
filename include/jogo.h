@@ -19,5 +19,8 @@ int  validarPalpite(int min, int max);
 void darFeedback(Caso c, int palpite, int secreto);
 void exibirCabecalho(Caso c, int tentativasRestantes);
 char *classificarPontuacao(int pontos);
+int chancePistaFalsaPorReputacao(int reputacao);
+int chanceMentiraPorReputacao(int reputacao);
+int peritoPrecisoPorReputacao(int reputacao);
 
 #endif

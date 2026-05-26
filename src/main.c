@@ -86,7 +86,8 @@ static void exibirMenu(void) {
     uiMenuItem(2, "Cassino", "Frequencia de fuga", "MEDIO", UI_YELLOW);
     uiMenuItem(3, "Apocalipse", "Porta infectada", "DIFICIL", UI_RED);
     uiMenuItem(4, "Dossie", "Historico e mentoria", "ARQUIVO", UI_CYAN);
-    uiMenuItem(5, "Sair", "Encerrar terminal", "OFFLINE", UI_DIM);
+    uiMenuItem(5, "Loja", "Itens estrategicos", "PRE-CASO", UI_MAGENTA);
+    uiMenuItem(6, "Sair", "Encerrar terminal", "OFFLINE", UI_DIM);
     uiBoxBottom();
     uiPrompt("COMANDO");
 }
@@ -103,7 +104,7 @@ int main(void) {
 
     do {
         exibirMenu();
-        opcao = lerOpcao(1, 5);
+        opcao = lerOpcao(1, 6);
 
         switch (opcao) {
             case 1:
@@ -125,6 +126,9 @@ int main(void) {
                 exibirHistorico();
                 break;
             case 5:
+                exibirLoja();
+                break;
+            case 6:
                 limparTela();
                 printf("\n");
                 uiBanner("ENCERRANDO SISTEMA", "Arquivando sessoes locais");
@@ -132,7 +136,7 @@ int main(void) {
                 printf("\n  Ate a proxima investigacao, Detetive.\n\n");
                 break;
         }
-    } while (opcao != 5);
+    } while (opcao != 6);
 
     return 0;
 }
