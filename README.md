@@ -125,11 +125,11 @@ A Sprint 02 teve foco na expansão da experiência do jogador, adicionando mecâ
 
 ### Backlog da Sprint 02
 
-<img src="./assets/imagens/sprint03-backlog.png.png" alt="Backlog Sprint 03" width="800">
+<img src="./assets/imagens/sprint02-backlog.png" alt="Backlog Sprint 03" width="800">
 
 ### Board da Sprint 02 e 03
 
-<img src="./assets/imagens/sprint03-board.png.png" alt="Board Sprint 03" width="800">
+<img src="./assets/imagens/sprint02-board.png" alt="Board Sprint 03" width="800">
 
 ---
 
@@ -137,7 +137,7 @@ A Sprint 02 teve foco na expansão da experiência do jogador, adicionando mecâ
 
 ### Gameplay da Sprint 02
 
-<img src="./assets/imagens/gameplay-sprint03.png.png" alt="Gameplay Sprint 03" width="800">
+<img src="./assets/imagens/gameplay-sprint02.png.png" alt="Gameplay Sprint 03" width="800">
 
 ---
 
