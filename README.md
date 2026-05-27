@@ -99,6 +99,82 @@ Toda a gestão de tarefas, Sprints e divisão de responsabilidades foi orquestra
 > 
 > <img src="./assets/imagens/print-backlog.png" alt="Print do Backlog Priorizado" width="800">
 
+
+---
+
+# Entrega 03 — Evolução do Sistema
+
+Durante a Sprint 02, o projeto evoluiu da estrutura base de investigação para um sistema mais estratégico e dinâmico, adicionando novas mecânicas de progressão, risco e recompensa para o jogador.
+
+## Funcionalidades Implementadas na Sprint 02
+
+### Sistema de Reputação Investigativa
+O jogador agora possui um nível de reputação que varia conforme seu desempenho durante os casos. Decisões mais eficientes aumentam a credibilidade do investigador, enquanto falhas frequentes reduzem sua reputação.
+
+### Sistema de Buffs
+O sistema concede vantagens temporárias ao jogador quando boas decisões são tomadas durante a investigação, incentivando estratégias mais eficientes.
+
+### Sistema de Debuffs
+Penalidades são aplicadas quando o jogador toma decisões ruins ou acumula erros excessivos, aumentando o desafio e tornando cada caso mais imprevisível.
+
+---
+
+## Organização da Sprint 02
+
+A Sprint 02 teve foco na expansão da experiência do jogador, adicionando mecânicas de progressão, consequências e aprofundamento estratégico.
+
+### Backlog da Sprint 02
+
+<img src="./assets/imagens/sprint03-backlog.png.png" alt="Backlog Sprint 03" width="800">
+
+### Board da Sprint 02 e 03
+
+<img src="./assets/imagens/sprint03-board.png.png" alt="Board Sprint 03" width="800">
+
+---
+
+## Evidência das Funcionalidades
+
+### Gameplay da Sprint 02
+
+<img src="./assets/imagens/gameplay-sprint03.png.png" alt="Gameplay Sprint 03" width="800">
+
+---
+
+## Programação em Par (Pair Programming)
+
+| Integrantes | Atividade |
+
+| Arthur Abelardo + Danilo Diniz | Desenvolvimento e testes do card de implementação da loja de itens |
+
+
+---
+
+## Testes de Sistema
+
+Os testes foram realizados manualmente em múltiplos cenários para garantir estabilidade e consistência das novas funcionalidades.
+
+| Cenário de Teste | Resultado |
+
+| Sistema de reputação funcionando corretamente | ✅ |
+| Aplicação de buffs durante a investigação | ✅ |
+| Aplicação de debuffs em decisões ruins | ✅ |
+| Tratamento de entradas inválidas | ✅ |
+| Salvamento automático da sessão | ✅ |
+| Finalização completa da investigação | ✅ |
+
+---
+
+## Screencast da Entrega 03
+
+- Organização da Sprint no Jira
+- Atualização do Board
+- Funcionalidades implementadas
+- Execução do sistema
+- Estrutura do repositório
+
+---
+
 ---
 
 ## Como Executar o Projeto
