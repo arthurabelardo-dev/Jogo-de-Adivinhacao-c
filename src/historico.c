@@ -6,7 +6,38 @@
 #include "tui.h"
 
 static int saldoCache = 0;
+static int reputacaoCache = 50;
+static int confiancaCache = 60;
+static int itensCache[TOTAL_ITENS_LOJA] = {0};
 static int saldoCarregado = 0;
+static const char *itensNome[TOTAL_ITENS_LOJA] = {
+    "Segunda Chance",
+    "Analise Extra",
+    "Scanner Forense",
+    "Intuicao",
+    "+2 Tentativas",
+    "+1 Interrogatorio"
+};
+static const char *itensDescricao[TOTAL_ITENS_LOJA] = {
+    "Ignora uma tentativa errada (uso unico por caso).",
+    "Revela uma pista adicional confiavel (nunca falsa).",
+    "Remove uma pista falsa ativa no caso (requer confianca >=50).",
+    "Mostra intervalo de +-10 ao redor do alvo.",
+    "Aumenta o limite de tentativas do caso em +2.",
+    "Adiciona +1 slot de interrogatorio no caso."
+};
+static const int itensPreco[TOTAL_ITENS_LOJA] = {50, 30, 60, 80, 40, 25};
+
+static int precoAjustadoPorConfianca(ItemLoja item) {
+    int preco = itensPreco[item];
+    if (confiancaCache >= 70) {
+        return (preco * 80) / 100;
+    }
+    if (confiancaCache < 30) {
+        return (preco * 120) / 100;
+    }
+    return preco;
+}
 
 static int somaTentativasRec(const Sessao *sessoes, int total) {
     if (total <= 0) {
@@ -150,6 +181,38 @@ static void carregarPerfil(void) {
             saldoCache = 0;
         }
     }
+    if (fgets(buffer, sizeof(buffer), f) != NULL) {
+        reputacaoCache = atoi(buffer);
+    } else {
+        reputacaoCache = 50;
+    }
+    if (fgets(buffer, sizeof(buffer), f) != NULL) {
+        confiancaCache = atoi(buffer);
+    } else {
+        confiancaCache = 60;
+    }
+    for (int i = 0; i < TOTAL_ITENS_LOJA; i++) {
+        if (fgets(buffer, sizeof(buffer), f) != NULL) {
+            itensCache[i] = atoi(buffer);
+        } else {
+            itensCache[i] = 0;
+        }
+        if (itensCache[i] < 0) {
+            itensCache[i] = 0;
+        }
+    }
+    if (reputacaoCache < 0) {
+        reputacaoCache = 0;
+    }
+    if (reputacaoCache > 100) {
+        reputacaoCache = 100;
+    }
+    if (confiancaCache < 0) {
+        confiancaCache = 0;
+    }
+    if (confiancaCache > 100) {
+        confiancaCache = 100;
+    }
 
     fclose(f);
     saldoCarregado = 1;
@@ -160,7 +223,10 @@ static void salvarPerfil(void) {
     if (f == NULL) {
         return;
     }
-    fprintf(f, "%d\n", saldoCache);
+    fprintf(f, "%d\n%d\n%d\n", saldoCache, reputacaoCache, confiancaCache);
+    for (int i = 0; i < TOTAL_ITENS_LOJA; i++) {
+        fprintf(f, "%d\n", itensCache[i]);
+    }
     fclose(f);
 }
 
@@ -191,6 +257,162 @@ int debitar(int valor) {
 int getSaldo(void) {
     carregarPerfil();
     return saldoCache;
+}
+
+int getScore(void) {
+    carregarPerfil();
+    return reputacaoCache;
+}
+
+void incrementar(int valor) {
+    if (valor <= 0) {
+        return;
+    }
+    carregarPerfil();
+    reputacaoCache += valor;
+    if (reputacaoCache > 100) {
+        reputacaoCache = 100;
+    }
+    salvarPerfil();
+}
+
+void decrementar(int valor) {
+    if (valor <= 0) {
+        return;
+    }
+    carregarPerfil();
+    reputacaoCache -= valor;
+    if (reputacaoCache < 0) {
+        reputacaoCache = 0;
+    }
+    salvarPerfil();
+}
+
+int getConfiancaDelegacia(void) {
+    carregarPerfil();
+    return confiancaCache;
+}
+
+void aumentarConfianca(int valor) {
+    if (valor <= 0) {
+        return;
+    }
+    carregarPerfil();
+    confiancaCache += valor;
+    if (confiancaCache > 100) {
+        confiancaCache = 100;
+    }
+    salvarPerfil();
+}
+
+void reduzirConfianca(int valor) {
+    if (valor <= 0) {
+        return;
+    }
+    carregarPerfil();
+    confiancaCache -= valor;
+    if (confiancaCache < 0) {
+        confiancaCache = 0;
+    }
+    salvarPerfil();
+}
+
+int getQuantidadeItem(ItemLoja item) {
+    if (item < 0 || item >= TOTAL_ITENS_LOJA) {
+        return 0;
+    }
+    carregarPerfil();
+    return itensCache[item];
+}
+
+int consumirItem(ItemLoja item) {
+    if (item < 0 || item >= TOTAL_ITENS_LOJA) {
+        return 0;
+    }
+    carregarPerfil();
+    if (itensCache[item] <= 0) {
+        return 0;
+    }
+    itensCache[item]--;
+    salvarPerfil();
+    return 1;
+}
+
+int comprarItem(ItemLoja item) {
+    int preco;
+    if (item < 0 || item >= TOTAL_ITENS_LOJA) {
+        return 0;
+    }
+    carregarPerfil();
+    preco = precoAjustadoPorConfianca(item);
+    if (saldoCache < preco) {
+        return 0;
+    }
+    saldoCache -= preco;
+    itensCache[item]++;
+    salvarPerfil();
+    return 1;
+}
+
+void exibirLoja(void) {
+    int opcao = 0;
+
+    while (opcao != 7) {
+        limparTela();
+        printf("\n");
+        uiBanner("LOJA ESTRATEGICA", "Suprimentos entre casos");
+        uiStamp("COMPRAS PRE-CASO", "Sem acerto automatico", UI_DIM);
+        uiSection("CATALOGO", UI_CYAN);
+        uiBoxTop();
+        for (int i = 0; i < TOTAL_ITENS_LOJA; i++) {
+            char linha[220];
+            const char *status = "Disponivel";
+            int preco = precoAjustadoPorConfianca((ItemLoja)i);
+            if (i == ITEM_SCANNER_FORENSE && getConfiancaDelegacia() < 50) {
+                status = "Bloqueado: confianca < 50";
+            } else if (getSaldo() < preco) {
+                status = "Indisponivel: saldo baixo";
+            }
+            snprintf(linha, sizeof(linha), "[%d] %s | custo: %d | estoque: %d",
+                     i + 1, itensNome[i], preco, getQuantidadeItem((ItemLoja)i));
+            uiBoxWrap(linha, UI_WHITE);
+            uiBoxWrap(itensDescricao[i], UI_DIM);
+            uiBoxWrap(status, strcmp(status, "Disponivel") == 0 ? UI_GREEN : UI_YELLOW);
+            if (i < TOTAL_ITENS_LOJA - 1) {
+                uiBoxWrap(" ", UI_DIM);
+            }
+        }
+        uiBoxBottom();
+        uiSection("RECURSOS", UI_MAGENTA);
+        uiBoxTop();
+        {
+            char linha[80];
+            snprintf(linha, sizeof(linha), "%d moedas", getSaldo());
+            uiBoxMid("Saldo", linha, UI_CYAN);
+            snprintf(linha, sizeof(linha), "%d", getConfiancaDelegacia());
+            uiBoxMid("Confianca", linha, UI_GREEN);
+        }
+        uiBoxBottom();
+        uiSection("COMANDO", UI_YELLOW);
+        printf("  %s[1..6]%s Comprar item | %s[7]%s Voltar\n", UI_WHITE, UI_RESET, UI_YELLOW, UI_RESET);
+        uiPrompt("LOJA");
+        opcao = lerOpcao(1, 7);
+        if (opcao == 7) {
+            break;
+        }
+        if (opcao == 3 && getConfiancaDelegacia() < 50) {
+            uiAlert("LOJA", "Scanner Forense bloqueado: confianca da delegacia abaixo de 50.", UI_RED);
+            pausar();
+            continue;
+        }
+        if (!comprarItem((ItemLoja)(opcao - 1))) {
+            uiAlert("LOJA", "Compra recusada: saldo insuficiente.", UI_RED);
+            pausar();
+            continue;
+        }
+        uiAlert("LOJA", "Item adquirido e armazenado no inventario.", UI_GREEN);
+        pausar();
+    }
 }
 
 void salvarSessao(Sessao s) {
@@ -310,6 +532,8 @@ void exibirHistorico(void) {
         }
         snprintf(valor, sizeof(valor), "%d moedas", getSaldo());
         uiBoxMid("Saldo atual", valor, UI_MAGENTA);
+        snprintf(valor, sizeof(valor), "%d", getConfiancaDelegacia());
+        uiBoxMid("Confianca delegacia", valor, UI_CYAN);
         uiBoxBottom();
 
         if (temAnalise) {
