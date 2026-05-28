@@ -144,7 +144,7 @@ A Sprint 02 teve foco na expansão da experiência do jogador, adicionando mecâ
 ## Programação em Par (Pair Programming)
 
 | Integrantes | Atividade |
-
+|:---|:---:|
 | Arthur Abelardo + Danilo Diniz | Desenvolvimento e testes do card de implementação da loja de itens |
 
 
@@ -155,7 +155,7 @@ A Sprint 02 teve foco na expansão da experiência do jogador, adicionando mecâ
 Os testes foram realizados manualmente em múltiplos cenários para garantir estabilidade e consistência das novas funcionalidades.
 
 | Cenário de Teste | Resultado |
-
+|:---|:---:|
 | Sistema de reputação funcionando corretamente | ✅ |
 | Aplicação de buffs durante a investigação | ✅ |
 | Aplicação de debuffs em decisões ruins | ✅ |
@@ -167,13 +167,17 @@ Os testes foram realizados manualmente em múltiplos cenários para garantir est
 
 ## Screencast da Entrega 03
 
+O vídeo abaixo demonstra:
+
 - Organização da Sprint no Jira
 - Atualização do Board
 - Funcionalidades implementadas
 - Execução do sistema
-- Estrutura do repositório
 
----
+
+### Vídeo da Entrega 03
+
+https://youtu.be/PbkB4BFEWQQ
 
 ---
 
