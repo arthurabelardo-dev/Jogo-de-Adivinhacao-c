@@ -180,6 +180,11 @@ O vídeo abaixo demonstra:
 https://youtu.be/PbkB4BFEWQQ
 
 ---
+## Issue / Bug Tracker
+
+O projeto utiliza o sistema de Issues do GitHub para registrar funcionalidades, melhorias e correções identificadas durante o desenvolvimento.
+
+<img src="./assets/imagens/IssueBug-Tracker-atualizado-no-GitHub.png" alt="GitHub Issues" width="800">
 
 ## Como Executar o Projeto
 
