@@ -8,6 +8,7 @@
 #include "tui.h"
 
 #define MAX_PISTAS 4
+#define MAX_PISTAS_TOTAL 5
 #define MAX_INTERROGADOS 5
 #define MAX_REGISTROS 16
 #define MAX_CONSULTAS 2
@@ -63,6 +64,59 @@ static int calcularTentativasPorConfianca(int confianca, int tentativasBase) {
     return tentativasBase;
 }
 
+void iniciarEfeitoTemporario(EfeitoTemporario *efeito, int duracao) {
+    if (efeito == NULL) {
+        return;
+    }
+    if (duracao <= 0) {
+        efeito->ativo = 0;
+        efeito->duracao = 0;
+        return;
+    }
+    efeito->ativo = 1;
+    efeito->duracao = duracao;
+}
+
+int efeitoTemporarioAtivo(const EfeitoTemporario *efeito) {
+    return efeito != NULL && efeito->ativo && efeito->duracao > 0;
+}
+
+int consumirEfeitoTemporario(EfeitoTemporario *efeito) {
+    if (efeito == NULL || !efeito->ativo) {
+        return 0;
+    }
+    if (efeito->duracao > 0) {
+        efeito->duracao--;
+    }
+    if (efeito->duracao <= 0) {
+        efeito->ativo = 0;
+        efeito->duracao = 0;
+        return 0;
+    }
+    return efeito->duracao;
+}
+
+int ajusteConfiabilidadePista(int bonusPrecisao, int penalidadeQualidade) {
+    return bonusPrecisao - penalidadeQualidade;
+}
+
+int calcularMultiplicadorRiscoRecompensa(int pistasColetadas) {
+    if (pistasColetadas == 1) {
+        return 150;
+    }
+    if (pistasColetadas < 3) {
+        return 125;
+    }
+    return 100;
+}
+
+int aplicarPenalidadeInvestigacaoExtensa(int recompensa, int pistasColetadas) {
+    if (pistasColetadas > 5) {
+        return (recompensa * 90) / 100;
+    }
+    return recompensa;
+}
+
 typedef enum {
     PROP_PAR = 0,
     PROP_MULT3,
@@ -107,6 +161,7 @@ typedef struct {
 
 typedef struct {
     PropriedadeAlvo propriedade;
+    const char *tema;
     const char *textoTrue;
     const char *textoFalse;
 } PistaInfo;
@@ -394,46 +449,46 @@ static const CasoInfo casos[] = {
 };
 
 static const PistaInfo pistasCaso1[] = {
-    {PROP_PAR, "Pericia UV: o codigo e PAR. Dica: pares terminam em 0, 2, 4, 6 ou 8.",
+    {PROP_PAR, "COFRE", "Pericia UV: o codigo e PAR. Dica: pares terminam em 0, 2, 4, 6 ou 8.",
      "Pericia UV: o codigo e IMPAR. Dica: impares terminam em 1, 3, 5, 7 ou 9."},
-    {PROP_MULT3, "No diario da vitima: codigo divisivel por 3. Dica: soma dos algarismos divisivel por 3.",
+    {PROP_MULT3, "COFRE", "No diario da vitima: codigo divisivel por 3. Dica: soma dos algarismos divisivel por 3.",
      "No diario da vitima: codigo nao divisivel por 3. Dica: soma dos algarismos nao fecha multiplo de 3."},
-    {PROP_MULT5, "Analise do teclado: codigo divisivel por 5. Dica: termina em 0 ou 5.",
+    {PROP_MULT5, "COFRE", "Analise do teclado: codigo divisivel por 5. Dica: termina em 0 ou 5.",
      "Analise do teclado: codigo nao divisivel por 5. Dica: nao termina em 0 nem 5."},
-    {PROP_PRIMO, "Relato da secretaria: combinacao prima. Dica: primo tem exatamente 2 divisores.",
+    {PROP_PRIMO, "COFRE", "Relato da secretaria: combinacao prima. Dica: primo tem exatamente 2 divisores.",
      "Relato da secretaria: combinacao nao prima. Dica: tem mais de 2 divisores."},
-    {PROP_MULT7, "Anotacao fiscal: codigo em bloco multiplo de 7.",
+    {PROP_MULT7, "COFRE", "Anotacao fiscal: codigo em bloco multiplo de 7.",
      "Anotacao fiscal: codigo fora dos blocos multiplos de 7."},
-    {PROP_DIGITO_ALTO, "Na fita de seguranca: ultimo digito e 5 ou maior.",
+    {PROP_DIGITO_ALTO, "COFRE", "Na fita de seguranca: ultimo digito e 5 ou maior.",
      "Na fita de seguranca: ultimo digito e menor que 5."},
-    {PROP_SOMA_DIGITOS_PAR, "No contrato rasgado: soma dos algarismos e PAR.",
+    {PROP_SOMA_DIGITOS_PAR, "COFRE", "No contrato rasgado: soma dos algarismos e PAR.",
      "No contrato rasgado: soma dos algarismos e IMPAR."}
 };
 
 static const PistaInfo pistasCaso2[] = {
-    {PROP_PAR, "Mesa de som: frequencia final PAR.", "Mesa de som: frequencia final IMPAR."},
-    {PROP_MULT3, "Caderno da mesa VIP: frequencia multiplo de 3.",
+    {PROP_PAR, "RADIO", "Mesa de som: frequencia final PAR.", "Mesa de som: frequencia final IMPAR."},
+    {PROP_MULT3, "RADIO", "Caderno da mesa VIP: frequencia multiplo de 3.",
      "Caderno da mesa VIP: frequencia nao multiplo de 3."},
-    {PROP_MULT5, "Ruido do radio: frequencia divisivel por 5.",
+    {PROP_MULT5, "RADIO", "Ruido do radio: frequencia divisivel por 5.",
      "Ruido do radio: frequencia nao divisivel por 5."},
-    {PROP_PRIMO, "Interceptacao externa: frequencia prima.",
+    {PROP_PRIMO, "RADIO", "Interceptacao externa: frequencia prima.",
      "Interceptacao externa: frequencia nao prima."},
-    {PROP_MULT7, "Rota tatica: canal em bloco multiplo de 7.",
+    {PROP_MULT7, "RADIO", "Rota tatica: canal em bloco multiplo de 7.",
      "Rota tatica: canal fora de bloco multiplo de 7."},
-    {PROP_DIGITO_ALTO, "Leitura da antena: ultimo digito 5 ou maior.",
+    {PROP_DIGITO_ALTO, "RADIO", "Leitura da antena: ultimo digito 5 ou maior.",
      "Leitura da antena: ultimo digito abaixo de 5."},
-    {PROP_SOMA_DIGITOS_PAR, "Mixagem forense: soma dos algarismos da frequencia e PAR.",
+    {PROP_SOMA_DIGITOS_PAR, "RADIO", "Mixagem forense: soma dos algarismos da frequencia e PAR.",
      "Mixagem forense: soma dos algarismos da frequencia e IMPAR."}
 };
 
 static const PistaInfo pistasCaso3[] = {
-    {PROP_PRIMO, "SOC limpo: porta infectada prima.", "SOC limpo: porta infectada nao prima."},
-    {PROP_PAR, "Telemetria da subestacao: porta PAR.", "Telemetria da subestacao: porta IMPAR."},
-    {PROP_MULT5, "Firewall legado: porta divisivel por 5.", "Firewall legado: porta nao divisivel por 5."},
-    {PROP_MULT7, "Plano de contingencia: porta multiplo de 7.", "Plano de contingencia: porta nao multiplo de 7."},
-    {PROP_SOMA_DIGITOS_PAR, "Relatorio da operadora: soma dos algarismos da porta e PAR.",
+    {PROP_PRIMO, "BACKBONE", "SOC limpo: porta infectada prima.", "SOC limpo: porta infectada nao prima."},
+    {PROP_PAR, "BACKBONE", "Telemetria da subestacao: porta PAR.", "Telemetria da subestacao: porta IMPAR."},
+    {PROP_MULT5, "BACKBONE", "Firewall legado: porta divisivel por 5.", "Firewall legado: porta nao divisivel por 5."},
+    {PROP_MULT7, "BACKBONE", "Plano de contingencia: porta multiplo de 7.", "Plano de contingencia: porta nao multiplo de 7."},
+    {PROP_SOMA_DIGITOS_PAR, "BACKBONE", "Relatorio da operadora: soma dos algarismos da porta e PAR.",
      "Relatorio da operadora: soma dos algarismos da porta e IMPAR."},
-    {PROP_DIGITO_ALTO, "Sonda de rede: ultimo digito da porta e 5 ou maior.",
+    {PROP_DIGITO_ALTO, "BACKBONE", "Sonda de rede: ultimo digito da porta e 5 ou maior.",
      "Sonda de rede: ultimo digito da porta e menor que 5."}
 };
 
@@ -470,7 +525,7 @@ static void obterPoolPistas(int idCaso, const PistaInfo **pool, int *total) {
     *total = (int)(sizeof(pistasCaso3) / sizeof(pistasCaso3[0]));
 }
 
-static void selecionarPistasAleatorias(int idCaso, int quantidade, int selecionadas[MAX_PISTAS]) {
+static void selecionarPistasAleatorias(int idCaso, int quantidade, int selecionadas[MAX_PISTAS_TOTAL]) {
     const PistaInfo *pool = NULL;
     int total = 0;
     int ordem[MAX_POOL_PISTAS];
@@ -491,31 +546,197 @@ static void selecionarPistasAleatorias(int idCaso, int quantidade, int seleciona
         ordem[j] = tmp;
     }
 
-    for (int i = 0; i < MAX_PISTAS; i++) {
+    for (int i = 0; i < MAX_PISTAS_TOTAL; i++) {
         selecionadas[i] = -1;
     }
-    for (int i = 0; i < quantidade && i < total && i < MAX_PISTAS; i++) {
+    for (int i = 0; i < quantidade && i < total && i < MAX_PISTAS_TOTAL; i++) {
         selecionadas[i] = ordem[i];
     }
 }
 
-static void prepararPistasFalsasAtivas(int reputacao, int maxPistas, int pistasFalsas[MAX_PISTAS]) {
-    for (int i = 0; i < MAX_PISTAS; i++) {
+static void prepararPistasAtivas(int reputacao, int totalPistas, int pistasRuido[MAX_PISTAS_TOTAL],
+                                 int pistasFalsas[MAX_PISTAS_TOTAL]) {
+    (void)reputacao;
+    for (int i = 0; i < MAX_PISTAS_TOTAL; i++) {
+        pistasRuido[i] = rand() % 100;
         pistasFalsas[i] = 0;
     }
-    for (int i = 0; i < maxPistas && i < MAX_PISTAS; i++) {
-        pistasFalsas[i] = ((rand() % 100) < chancePistaFalsaPorReputacao(reputacao));
-    }
+    (void)totalPistas;
 }
 
-static int removerUmaPistaFalsaAtiva(int maxPistas, int pistasFalsas[MAX_PISTAS]) {
-    for (int i = 0; i < maxPistas && i < MAX_PISTAS; i++) {
+static int removerUmaPistaFalsaAtiva(int maxPistas, int pistasFalsas[MAX_PISTAS_TOTAL]) {
+    for (int i = 0; i < maxPistas && i < MAX_PISTAS_TOTAL; i++) {
         if (pistasFalsas[i]) {
             pistasFalsas[i] = 0;
             return 1;
         }
     }
     return 0;
+}
+
+static void registrarCoerenciaPista(const char *tema, const char **temaAnterior, int *sequenciaCoerente) {
+    if (temaAnterior == NULL || sequenciaCoerente == NULL) {
+        return;
+    }
+
+    if (*temaAnterior != NULL && tema != NULL && strcmp(*temaAnterior, tema) == 0) {
+        (*sequenciaCoerente)++;
+    } else {
+        *sequenciaCoerente = 1;
+    }
+    *temaAnterior = tema;
+}
+
+static void consumirEfeitosDepoisDePista(int *buffPrecisaoAtivo, int *precisaoPistasRestantes,
+                                         int *debuffQualidadeAtivo, int *debuffQualidadeRestantes,
+                                         int *debuffMentirosoAtivo, int *debuffMentirosoRestantes) {
+    if (buffPrecisaoAtivo != NULL && precisaoPistasRestantes != NULL && *buffPrecisaoAtivo) {
+        (*precisaoPistasRestantes)--;
+        if (*precisaoPistasRestantes <= 0) {
+            *precisaoPistasRestantes = 0;
+            *buffPrecisaoAtivo = 0;
+        }
+    }
+
+    if (debuffQualidadeAtivo != NULL && debuffQualidadeRestantes != NULL && *debuffQualidadeAtivo) {
+        (*debuffQualidadeRestantes)--;
+        if (*debuffQualidadeRestantes <= 0) {
+            *debuffQualidadeRestantes = 0;
+            *debuffQualidadeAtivo = 0;
+        }
+    }
+
+    if (debuffMentirosoAtivo != NULL && debuffMentirosoRestantes != NULL && *debuffMentirosoAtivo) {
+        (*debuffMentirosoRestantes)--;
+        if (*debuffMentirosoRestantes <= 0) {
+            *debuffMentirosoRestantes = 0;
+            *debuffMentirosoAtivo = 0;
+        }
+    }
+}
+
+static void ativarDebuffQualidade(int *debuffAtivo, int *duracaoRestante) {
+    if (debuffAtivo == NULL || duracaoRestante == NULL) {
+        return;
+    }
+    *debuffAtivo = 1;
+    *duracaoRestante = 2;
+}
+
+static void aplicarPista(char *feedback, size_t tamanho, const CasoInfo *caso, int pistaNumero,
+                         int totalPistasAtivas, int secreto, const int pistasSelecionadas[MAX_PISTAS_TOTAL],
+                         int reputacao, const int pistasFalsas[MAX_PISTAS_TOTAL],
+                         const int pistasRuido[MAX_PISTAS_TOTAL], int ajusteConfiabilidade,
+                         int forcarPistaFalsa, int forcarVerdade);
+
+static int selecionarPistaBonusBanco(int idCaso, const int pistasSelecionadas[MAX_PISTAS_TOTAL],
+                                     int totalSelecionadas, const char *temaDesejado) {
+    const PistaInfo *pool = NULL;
+    int total = 0;
+    int candidatos[MAX_POOL_PISTAS];
+    int totalCandidatos = 0;
+
+    obterPoolPistas(idCaso, &pool, &total);
+    for (int i = 0; i < total; i++) {
+        int usada = 0;
+
+        for (int j = 0; j < totalSelecionadas && j < MAX_PISTAS_TOTAL; j++) {
+            if (pistasSelecionadas[j] == i) {
+                usada = 1;
+                break;
+            }
+        }
+        if (usada) {
+            continue;
+        }
+        if (temaDesejado != NULL && strcmp(pool[i].tema, temaDesejado) != 0) {
+            continue;
+        }
+        candidatos[totalCandidatos++] = i;
+    }
+
+    if (totalCandidatos == 0 && temaDesejado != NULL) {
+        return selecionarPistaBonusBanco(idCaso, pistasSelecionadas, totalSelecionadas, NULL);
+    }
+    if (totalCandidatos == 0) {
+        return -1;
+    }
+    return candidatos[rand() % totalCandidatos];
+}
+
+static int liberarPistaBonusCoerente(const CasoInfo *caso, int reputacao, int *totalPistasAtivas,
+                                     int pistasSelecionadas[MAX_PISTAS_TOTAL], int pistasRuido[MAX_PISTAS_TOTAL],
+                                     int pistasFalsas[MAX_PISTAS_TOTAL], const char **temasSelecionados,
+                                     const char *temaDesejado) {
+    const PistaInfo *pool = NULL;
+    int total = 0;
+    int idxBonus;
+
+    if (totalPistasAtivas == NULL || *totalPistasAtivas >= MAX_PISTAS_TOTAL) {
+        return 0;
+    }
+
+    idxBonus = selecionarPistaBonusBanco(caso->id, pistasSelecionadas, *totalPistasAtivas, temaDesejado);
+    if (idxBonus < 0) {
+        return 0;
+    }
+
+    obterPoolPistas(caso->id, &pool, &total);
+    if (idxBonus >= total) {
+        return 0;
+    }
+
+    pistasSelecionadas[*totalPistasAtivas] = idxBonus;
+    pistasRuido[*totalPistasAtivas] = rand() % 100;
+    pistasFalsas[*totalPistasAtivas] = (pistasRuido[*totalPistasAtivas] < chancePistaFalsaPorReputacao(reputacao));
+    temasSelecionados[*totalPistasAtivas] = pool[idxBonus].tema;
+    (*totalPistasAtivas)++;
+    return 1;
+}
+
+static int registrarPistaEVerificarBonus(const CasoInfo *caso, int reputacao, int secreto,
+                                         int *totalPistasAtivas, int pistasSelecionadas[MAX_PISTAS_TOTAL],
+                                         int pistasRuido[MAX_PISTAS_TOTAL], int pistasFalsas[MAX_PISTAS_TOTAL],
+                                         const char **temasSelecionados, int *pistasUsadas,
+                                         char pistasRegistradas[MAX_PISTAS_TOTAL][MAX_FEEDBACK],
+                                         char *feedback, size_t feedbackTamanho, int *buffPrecisaoAtivo,
+                                         int *precisaoPistasRestantes, int *debuffQualidadeAtivo,
+                                         int *debuffQualidadeRestantes, int *debuffMentirosoAtivo,
+                                         int *debuffMentirosoRestantes, const char **temaAnterior,
+                                         int *sequenciaPistasCoerentes, int *bonusPistaLiberada) {
+    const char *temaAtual;
+    int indiceNovo;
+
+    if (pistasUsadas == NULL || *pistasUsadas <= 0 || totalPistasAtivas == NULL) {
+        return 0;
+    }
+
+    temaAtual = temasSelecionados[*pistasUsadas - 1];
+    registrarCoerenciaPista(temaAtual, temaAnterior, sequenciaPistasCoerentes);
+    if (*bonusPistaLiberada || *sequenciaPistasCoerentes < 3) {
+        return 0;
+    }
+
+    if (!liberarPistaBonusCoerente(caso, reputacao, totalPistasAtivas, pistasSelecionadas, pistasRuido,
+                                   pistasFalsas, temasSelecionados, temaAtual)) {
+        return 0;
+    }
+
+    *bonusPistaLiberada = 1;
+    indiceNovo = *pistasUsadas;
+    (*pistasUsadas)++;
+    int ajusteConfiabilidade = ajusteConfiabilidadePista(
+        (buffPrecisaoAtivo != NULL && *buffPrecisaoAtivo) ? 20 : 0,
+        (debuffQualidadeAtivo != NULL && *debuffQualidadeAtivo) ? 20 : 0);
+    int forcarPistaFalsa = (debuffMentirosoAtivo != NULL && *debuffMentirosoAtivo);
+    aplicarPista(feedback, feedbackTamanho, caso, *pistasUsadas, *totalPistasAtivas, secreto, pistasSelecionadas,
+                 reputacao, pistasFalsas, pistasRuido, ajusteConfiabilidade, forcarPistaFalsa, 0);
+    strncpy(pistasRegistradas[indiceNovo], feedback, MAX_FEEDBACK - 1);
+    pistasRegistradas[indiceNovo][MAX_FEEDBACK - 1] = '\0';
+    registrarCoerenciaPista(temasSelecionados[indiceNovo], temaAnterior, sequenciaPistasCoerentes);
+    consumirEfeitosDepoisDePista(buffPrecisaoAtivo, precisaoPistasRestantes, debuffQualidadeAtivo,
+                                 debuffQualidadeRestantes, debuffMentirosoAtivo, debuffMentirosoRestantes);
+    return 1;
 }
 
 static void prepararItensAtivosCaso(ItensAtivosCaso *itens, int confiancaAtual) {
@@ -679,26 +900,28 @@ static int calcularPontos(const CasoInfo *caso, int tentativasRestantes, int pis
     return pontos;
 }
 
-static int percentualRecompensa(int venceu, int tentativasUsadas) {
+static int percentualRecompensa(int venceu, int pistasColetadas) {
     if (!venceu) {
         return 15;
     }
-    if (tentativasUsadas <= 1) {
-        return 100;
-    }
-    if (tentativasUsadas == 2) {
-        return 65;
-    }
-    return 40;
+    return calcularMultiplicadorRiscoRecompensa(pistasColetadas);
 }
 
-static int calcularRecompensaMoedas(const CasoInfo *caso, int venceu, int tentativasUsadas,
+static int calcularRecompensaMoedas(const CasoInfo *caso, int venceu, int pistasColetadas,
                                       int *percentual) {
-    int pct = percentualRecompensa(venceu, tentativasUsadas);
+    int pct = percentualRecompensa(venceu, pistasColetadas);
+    int recompensa = (caso->recompensaBase * pct) / 100;
+
+    if (venceu) {
+        recompensa = aplicarPenalidadeInvestigacaoExtensa(recompensa, pistasColetadas);
+        if (pistasColetadas > 5) {
+            pct = (pct * 90) / 100;
+        }
+    }
     if (percentual != NULL) {
         *percentual = pct;
     }
-    return (caso->recompensaBase * pct) / 100;
+    return recompensa;
 }
 
 static const char *rankInvestigativo(int pontos, int venceu) {
@@ -825,14 +1048,16 @@ static void exibirHistoriaVitima(const CasoInfo *caso, int idxCaso) {
 }
 
 static void aplicarPista(char *feedback, size_t tamanho, const CasoInfo *caso, int pistaNumero,
-                          int secreto, const int pistasSelecionadas[MAX_PISTAS], int reputacao,
-                          const int pistasFalsas[MAX_PISTAS], int forcarVerdade) {
+                          int totalPistasAtivas, int secreto, const int pistasSelecionadas[MAX_PISTAS_TOTAL],
+                          int reputacao, const int pistasFalsas[MAX_PISTAS_TOTAL],
+                          const int pistasRuido[MAX_PISTAS_TOTAL], int ajusteConfiabilidade,
+                          int forcarPistaFalsa, int forcarVerdade) {
     const PistaInfo *pool = NULL;
     int total = 0;
     int idxPool;
     const PistaInfo *pista;
 
-    if (pistaNumero < 1 || pistaNumero > caso->maxPistas) {
+    if (pistaNumero < 1 || pistaNumero > totalPistasAtivas) {
         snprintf(feedback, tamanho, "PERITO: Sem novas pistas no momento.");
         return;
     }
@@ -847,14 +1072,12 @@ static void aplicarPista(char *feedback, size_t tamanho, const CasoInfo *caso, i
     pista = &pool[idxPool];
     {
         int verdade = segredoPossui(secreto, pista->propriedade);
-        int pistaFalsa = 0;
-        if (!forcarVerdade) {
-            pistaFalsa = pistasFalsas[pistaNumero - 1];
-        }
         const char *texto;
-        if (pistaFalsa) {
-            verdade = !verdade;
-        }
+        (void)pistasFalsas;
+        (void)pistasRuido;
+        (void)ajusteConfiabilidade;
+        (void)forcarPistaFalsa;
+        (void)forcarVerdade;
         texto = verdade ? pista->textoTrue : pista->textoFalse;
         if (peritoPrecisoPorReputacao(reputacao)) {
             snprintf(feedback, tamanho, "PERITO (alta precisao): %s", texto);
@@ -867,7 +1090,7 @@ static void aplicarPista(char *feedback, size_t tamanho, const CasoInfo *caso, i
 }
 
 static void exibirArquivoEvidencias(const CasoInfo *caso, int pistasUsadas,
-                                      char pistasRegistradas[MAX_PISTAS][MAX_FEEDBACK],
+                                      char pistasRegistradas[MAX_PISTAS_TOTAL][MAX_FEEDBACK],
                                       char depoimentos[MAX_CONSULTAS][MAX_FEEDBACK],
                                       int totalDepoimentos) {
     limparTela();
@@ -880,7 +1103,7 @@ static void exibirArquivoEvidencias(const CasoInfo *caso, int pistasUsadas,
         uiAlert("PISTAS", "Nenhuma pista coletada ate agora.", UI_DIM);
     } else {
         uiBoxTop();
-        for (int i = 0; i < pistasUsadas && i < MAX_PISTAS; i++) {
+        for (int i = 0; i < pistasUsadas && i < MAX_PISTAS_TOTAL; i++) {
             char linha[340];
             snprintf(linha, sizeof(linha), "%d) %s", i + 1, pistasRegistradas[i]);
             uiBoxWrap(linha, UI_YELLOW);
@@ -907,7 +1130,8 @@ static void exibirArquivoEvidencias(const CasoInfo *caso, int pistasUsadas,
 static void consultarInterrogado(char *feedback, size_t tamanho, const CasoInfo *caso, int secreto,
                                   int idxCaso, int ouvidos[MAX_INTERROGADOS], int *consultasUsadas,
                                   char depoimentos[MAX_CONSULTAS][MAX_FEEDBACK], int *totalDepoimentos,
-                                  int reputacao, int *deltaReputacao) {
+                                  int reputacao, int *deltaReputacao,
+                                  int *debuffMentirosoAtivo, int *debuffMentirosoRestantes) {
     int opcao;
     const InterrogadoInfo *escolhido;
     int propriedadeReal;
@@ -943,9 +1167,9 @@ static void consultarInterrogado(char *feedback, size_t tamanho, const CasoInfo 
     propriedadeReal = segredoPossui(secreto, escolhido->propriedade);
     mente = (rand() % 100) < chanceMentiraPorReputacao(reputacao);
     afirmacao = mente ? !propriedadeReal : propriedadeReal;
-    if (mente) {
-        *deltaReputacao -= 5;
-    }
+    (void)deltaReputacao;
+    (void)debuffMentirosoAtivo;
+    (void)debuffMentirosoRestantes;
 
     snprintf(feedback, tamanho, "DEPOIMENTO (%s): %s",
              escolhido->nome, afirmacao ? escolhido->falaTrue : escolhido->falaFalse);
@@ -993,20 +1217,34 @@ int confirmarCaso(int idCaso) {
 void jogarPartida(int idCaso) {
     const CasoInfo *caso = obterCaso(idCaso);
     int idxCaso = indiceCaso(idCaso);
-    int pistasSorteadas[MAX_PISTAS];
-    int pistasFalsasAtivas[MAX_PISTAS];
+    int pistasSorteadas[MAX_PISTAS_TOTAL];
+    int pistasFalsasAtivas[MAX_PISTAS_TOTAL];
+    int pistasRuido[MAX_PISTAS_TOTAL];
+    const char *temasSelecionados[MAX_PISTAS_TOTAL] = {0};
     int secreto = caso->min + (rand() % (caso->max - caso->min + 1));
     int confiancaAtual = getConfiancaDelegacia();
     int tentativas = calcularTentativasPorConfianca(confiancaAtual, caso->tentativas);
     int maxInterrogatorios = MAX_CONSULTAS;
     int segundaChanceDisponivel = 0;
+    int totalPistasAtivas = caso->maxPistas;
     int pistasUsadas = 0;
     int interrogatoriosUsados = 0;
     int penalidadesRitmo = 0;
     int interrogadosOuvidos[MAX_INTERROGADOS] = {0};
     int sequenciaRapida = 0;
+    int sequenciaDecisoesCorretas = 0;
+    int sequenciaPistasCoerentes = 0;
+    int precisaoPistasRestantes = 0;
+    int buffPrecisaoAtivo = 0;
+    int debuffQualidadeAtivo = 0;
+    int debuffQualidadeRestantes = 0;
+    int debuffMentirosoAtivo = 0;
+    int debuffMentirosoRestantes = 0;
+    int bonusPistaLiberada = 0;
+    int distanciaAnterior = caso->max - caso->min + 1;
+    const char *temaAnterior = NULL;
     time_t ultimoPalpite = time(NULL) - 3;
-    char pistasRegistradas[MAX_PISTAS][MAX_FEEDBACK] = {{0}};
+    char pistasRegistradas[MAX_PISTAS_TOTAL][MAX_FEEDBACK] = {{0}};
     char depoimentos[MAX_CONSULTAS][MAX_FEEDBACK] = {{0}};
     int totalDepoimentos = 0;
     RegistroPalpite registros[MAX_REGISTROS];
@@ -1037,9 +1275,19 @@ void jogarPartida(int idCaso) {
     s.venceu = 0;
 
     selecionarPistasAleatorias(caso->id, caso->maxPistas, pistasSorteadas);
-    prepararPistasFalsasAtivas(reputacaoAtual, caso->maxPistas, pistasFalsasAtivas);
+    {
+        const PistaInfo *pool = NULL;
+        int total = 0;
+        obterPoolPistas(caso->id, &pool, &total);
+        for (int i = 0; i < totalPistasAtivas && i < MAX_PISTAS_TOTAL; i++) {
+            if (pistasSorteadas[i] >= 0 && pistasSorteadas[i] < total) {
+                temasSelecionados[i] = pool[pistasSorteadas[i]].tema;
+            }
+        }
+    }
+    prepararPistasAtivas(reputacaoAtual, totalPistasAtivas, pistasRuido, pistasFalsasAtivas);
     if (itens.scannerForense) {
-        if (removerUmaPistaFalsaAtiva(caso->maxPistas, pistasFalsasAtivas)) {
+        if (removerUmaPistaFalsaAtiva(totalPistasAtivas, pistasFalsasAtivas)) {
             strcpy(feedback, "SCANNER FORENSE: uma pista falsa foi removida do conjunto ativo.");
         } else {
             strcpy(feedback, "SCANNER FORENSE: nao havia pista falsa ativa para remover.");
@@ -1060,12 +1308,28 @@ void jogarPartida(int idCaso) {
         strncpy(feedback, intuicaoLinha, sizeof(feedback) - 1);
         feedback[sizeof(feedback) - 1] = '\0';
     }
-    if (itens.analiseExtra && pistasUsadas < caso->maxPistas) {
+    if (itens.analiseExtra && pistasUsadas < totalPistasAtivas) {
+        int ajusteConfiabilidade = ajusteConfiabilidadePista(buffPrecisaoAtivo ? 20 : 0,
+                                                              debuffQualidadeAtivo ? 20 : 0);
+        int forcarPistaFalsa = debuffMentirosoAtivo;
+
         pistasUsadas++;
-        aplicarPista(feedback, sizeof(feedback), caso, pistasUsadas, secreto, pistasSorteadas, reputacaoAtual,
-                     pistasFalsasAtivas, 1);
+        aplicarPista(feedback, sizeof(feedback), caso, pistasUsadas, totalPistasAtivas, secreto, pistasSorteadas,
+                     reputacaoAtual, pistasFalsasAtivas, pistasRuido, ajusteConfiabilidade,
+                     forcarPistaFalsa, 1);
         strncpy(pistasRegistradas[pistasUsadas - 1], feedback, MAX_FEEDBACK - 1);
         pistasRegistradas[pistasUsadas - 1][MAX_FEEDBACK - 1] = '\0';
+        consumirEfeitosDepoisDePista(&buffPrecisaoAtivo, &precisaoPistasRestantes,
+                                     &debuffQualidadeAtivo, &debuffQualidadeRestantes,
+                                     &debuffMentirosoAtivo, &debuffMentirosoRestantes);
+        registrarPistaEVerificarBonus(caso, reputacaoAtual, secreto, &totalPistasAtivas, pistasSorteadas,
+                                      pistasRuido, pistasFalsasAtivas, temasSelecionados, &pistasUsadas,
+                                      pistasRegistradas, feedback, sizeof(feedback), &buffPrecisaoAtivo,
+                                      &precisaoPistasRestantes,
+                                      &debuffQualidadeAtivo, &debuffQualidadeRestantes,
+                                      &debuffMentirosoAtivo, &debuffMentirosoRestantes, &temaAnterior,
+                                      &sequenciaPistasCoerentes,
+                                      &bonusPistaLiberada);
     }
 
     while (tentativas > 0) {
@@ -1079,14 +1343,33 @@ void jogarPartida(int idCaso) {
         uiSection("PAINEL DE CONTROLE", UI_CYAN);
         uiMeter("Integridade", tentativas, tentativas > caso->tentativas ? tentativas : caso->tentativas,
                 tentativas <= 2 ? UI_RED : UI_GREEN);
-        uiMeter("Pistas de campo", caso->maxPistas - pistasUsadas, caso->maxPistas,
-                 pistasUsadas == caso->maxPistas ? UI_RED : UI_CYAN);
+        uiMeter("Pistas de campo", totalPistasAtivas - pistasUsadas, totalPistasAtivas,
+                 pistasUsadas == totalPistasAtivas ? UI_RED : UI_CYAN);
         uiMeter("Interrogatorios", maxInterrogatorios - interrogatoriosUsados, maxInterrogatorios,
                  interrogatoriosUsados == maxInterrogatorios ? UI_RED : UI_MAGENTA);
         uiMeter("Reputacao", reputacaoAtual, 100,
                  reputacaoAtual >= REP_ALTA ? UI_GREEN : (reputacaoAtual < REP_BAIXA ? UI_RED : UI_YELLOW));
         uiMeter("Confianca", confiancaAtual, 100,
                  confiancaAtual >= CONFIANCA_ALTA ? UI_GREEN : (confiancaAtual < CONFIANCA_BAIXA ? UI_RED : UI_YELLOW));
+        {
+            char riscoLinha[80];
+            int multiplicadorEstimado = calcularMultiplicadorRiscoRecompensa(pistasUsadas);
+            if (pistasUsadas > 5) {
+                multiplicadorEstimado = aplicarPenalidadeInvestigacaoExtensa(multiplicadorEstimado, pistasUsadas);
+            }
+            snprintf(riscoLinha, sizeof(riscoLinha), "x%d estimado | pistas=%d | tentativas=%d",
+                     multiplicadorEstimado, pistasUsadas, tentativas);
+            uiBoxMid("Risco vs recompensa", riscoLinha,
+                     pistasUsadas <= 1 ? UI_GREEN : (pistasUsadas < 3 ? UI_YELLOW : UI_RED));
+        }
+        if (buffPrecisaoAtivo) {
+            uiAlert("BUFF ATIVO: PRECISAO", "Proximas 2 pistas com +20% de confiabilidade.", UI_GREEN);
+        }
+        if (debuffQualidadeAtivo) {
+            char linhaDebuff[120];
+            snprintf(linhaDebuff, sizeof(linhaDebuff), "Expira em %d acao(oes).", debuffQualidadeRestantes);
+            uiAlert("DEBUFF ATIVO: QUALIDADE", linhaDebuff, UI_RED);
+        }
 
         uiSection("LEITURA ATUAL", UI_YELLOW);
         uiBoxTop();
@@ -1132,13 +1415,10 @@ void jogarPartida(int idCaso) {
 
         if (palpite == -1) {
             if (interrogatoriosUsados < maxInterrogatorios) {
-                int deltaAntes = deltaReputacao;
                 consultarInterrogado(feedback, sizeof(feedback), caso, secreto, idxCaso,
                                       interrogadosOuvidos, &interrogatoriosUsados,
-                                      depoimentos, &totalDepoimentos, reputacaoAtual, &deltaReputacao);
-                if (deltaReputacao < deltaAntes) {
-                    decrementar(deltaAntes - deltaReputacao);
-                }
+                                      depoimentos, &totalDepoimentos, reputacaoAtual, &deltaReputacao,
+                                      &debuffMentirosoAtivo, &debuffMentirosoRestantes);
             } else {
                 strcpy(feedback, "CENTRAL: Limite de interrogatorios atingido.");
             }
@@ -1147,12 +1427,27 @@ void jogarPartida(int idCaso) {
         }
 
         if (palpite == 0) {
-            if (pistasUsadas < caso->maxPistas) {
+            if (pistasUsadas < totalPistasAtivas) {
+                int ajusteConfiabilidade = ajusteConfiabilidadePista(buffPrecisaoAtivo ? 20 : 0,
+                                                                      debuffQualidadeAtivo ? 20 : 0);
+                int forcarPistaFalsa = debuffMentirosoAtivo;
+
                 pistasUsadas++;
-                aplicarPista(feedback, sizeof(feedback), caso, pistasUsadas, secreto, pistasSorteadas, reputacaoAtual,
-                             pistasFalsasAtivas, 0);
+                aplicarPista(feedback, sizeof(feedback), caso, pistasUsadas, totalPistasAtivas, secreto,
+                             pistasSorteadas, reputacaoAtual, pistasFalsasAtivas, pistasRuido,
+                             ajusteConfiabilidade, forcarPistaFalsa, 0);
                 strncpy(pistasRegistradas[pistasUsadas - 1], feedback, MAX_FEEDBACK - 1);
                 pistasRegistradas[pistasUsadas - 1][MAX_FEEDBACK - 1] = '\0';
+                consumirEfeitosDepoisDePista(&buffPrecisaoAtivo, &precisaoPistasRestantes,
+                                             &debuffQualidadeAtivo, &debuffQualidadeRestantes,
+                                             &debuffMentirosoAtivo, &debuffMentirosoRestantes);
+                registrarPistaEVerificarBonus(caso, reputacaoAtual, secreto, &totalPistasAtivas, pistasSorteadas,
+                                              pistasRuido, pistasFalsasAtivas, temasSelecionados, &pistasUsadas,
+                                              pistasRegistradas, feedback, sizeof(feedback), &buffPrecisaoAtivo,
+                                              &precisaoPistasRestantes, &debuffQualidadeAtivo,
+                                              &debuffQualidadeRestantes, &debuffMentirosoAtivo,
+                                              &debuffMentirosoRestantes, &temaAnterior,
+                                              &sequenciaPistasCoerentes, &bonusPistaLiberada);
             } else {
                 strcpy(feedback, "PERITO: Nao ha novas pistas de campo disponiveis.");
             }
@@ -1194,6 +1489,20 @@ void jogarPartida(int idCaso) {
             contPalpites++;
         }
 
+        {
+            int distanciaAtual = abs(palpite - secreto);
+            if (distanciaAtual < distanciaAnterior) {
+                sequenciaDecisoesCorretas++;
+                if (sequenciaDecisoesCorretas >= 3 && !buffPrecisaoAtivo) {
+                    buffPrecisaoAtivo = 1;
+                    precisaoPistasRestantes = 2;
+                }
+            } else {
+                sequenciaDecisoesCorretas = 0;
+            }
+            distanciaAnterior = distanciaAtual;
+        }
+
         if (palpite == secreto) {
             s.venceu = 1;
             break;
@@ -1206,6 +1515,7 @@ void jogarPartida(int idCaso) {
             snprintf(feedback, sizeof(feedback), "%s Leitura: %s.",
                      caso->menor, registros[contPalpites - 1].leitura);
         }
+        ativarDebuffQualidade(&debuffQualidadeAtivo, &debuffQualidadeRestantes);
         if (segundaChanceDisponivel) {
             segundaChanceDisponivel = 0;
             snprintf(feedback, sizeof(feedback),
@@ -1227,14 +1537,10 @@ void jogarPartida(int idCaso) {
     s.tentativasUsadas = contPalpites;
     if (s.venceu) {
         deltaReputacao += 10;
-    } else {
-        deltaReputacao -= 8;
     }
 
     if (s.venceu) {
         incrementar(10);
-    } else {
-        decrementar(8);
     }
     if (s.venceu && s.tentativasUsadas <= 2) {
         aumentarConfianca(6);
@@ -1251,7 +1557,7 @@ void jogarPartida(int idCaso) {
                                  penalidadesRitmo, s.venceu);
     int saldoAntes = getSaldo();
     int multiplicadorPct = 0;
-    int recompensa = calcularRecompensaMoedas(caso, s.venceu, s.tentativasUsadas, &multiplicadorPct);
+    int recompensa = calcularRecompensaMoedas(caso, s.venceu, pistasUsadas, &multiplicadorPct);
     int saldoDepois;
 
     printf("\n");
@@ -1274,6 +1580,9 @@ void jogarPartida(int idCaso) {
     uiBoxMid("Tentativas", valor, UI_WHITE);
     snprintf(valor, sizeof(valor), "%d", pistasUsadas);
     uiBoxMid("Pistas usadas", valor, pistasUsadas > 0 ? UI_YELLOW : UI_GREEN);
+    snprintf(valor, sizeof(valor), "x%d", multiplicadorPct);
+    uiBoxMid("Risco vs recompensa", valor,
+             multiplicadorPct > 125 ? UI_GREEN : (multiplicadorPct > 100 ? UI_YELLOW : UI_RED));
     snprintf(valor, sizeof(valor), "%d", interrogatoriosUsados);
     uiBoxMid("Interrogatorios", valor, interrogatoriosUsados > 0 ? UI_MAGENTA : UI_GREEN);
     snprintf(valor, sizeof(valor), "%d", penalidadesRitmo);
@@ -1297,6 +1606,9 @@ void jogarPartida(int idCaso) {
     uiBoxMid("Recompensa base", valor, UI_WHITE);
     snprintf(valor, sizeof(valor), "%d%%", multiplicadorPct);
     uiBoxMid("Multiplicador", valor, UI_CYAN);
+    if (pistasUsadas > 5) {
+        uiAlert("STATUS", "Investigacao extensa - recompensa reduzida.", UI_RED);
+    }
     snprintf(valor, sizeof(valor), "%d moedas", recompensa);
     uiBoxMid("Valor final", valor, UI_GREEN);
     snprintf(valor, sizeof(valor), "%d -> %d", saldoAntes, saldoDepois);
